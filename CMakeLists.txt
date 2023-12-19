@@ -1,22 +1,23 @@
-cmake_minimum_required(VERSION 3.10)
-project(LibTensor VERSION 1.0)
+# Specify the minimum version for CMake
+cmake_minimum_required(VERSION 3.0)
 
-# 设置C++标准
+# Project's name
+project(libtensor)
+
+# Set the C++ standard you are using (e.g., C++11, C++14, C++17, C++20)
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# 包含的头文件目录
-include_directories(include)
+# The following folder will be included
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# 启用测试
-enable_testing()
+# Can manually add the sources using the set command as follows:
+# set(SOURCES src/main.cpp src/other_source.cpp)
 
-# 添加测试可执行文件
-add_executable(test_tensor tests/test_tensor.cpp)
+# However, the file(GLOB...) allows for wildcard additions:
+file(GLOB SOURCES "src/*.cpp")
 
-# 如果您有其他库要链接到测试可执行文件，请在这里添加
-# 例如，如果您使用了外部测试框架，可能需要链接该框架到 test_tensor
-# target_link_libraries(test_tensor PRIVATE some_other_libraries)
+# Add executable based on the source files
+add_executable(libtensor ${SOURCES})
 
-# 添加测试
-add_test(NAME TestTensor COMMAND test_tensor)
+# If you have any libraries to link (e.g., if you have some libs in a 'lib' directory)
+# target_link_libraries(YourExecutableName ${PROJECT_SOURCE_DIR}/lib/your_lib.a)
