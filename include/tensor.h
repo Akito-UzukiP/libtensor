@@ -28,10 +28,7 @@ namespace ts {
             void printTensor(std::ostream & os, int dim, int* indices) const;
             template <typename U>
             friend std::ostream & operator<<(std::ostream & os, const Tensor<U> & m);
-            // 特殊初始化方法
-            static Tensor<T> zeros(const std::initializer_list<int>& dims);
-            static Tensor<T> ones(const std::initializer_list<int>& dims);
-            static Tensor<T> rand(const std::initializer_list<int>& dims);
+
     };
 
     // Default constructor
@@ -130,7 +127,7 @@ namespace ts {
     }
 
     template <typename T>
-    Tensor<T> Tensor<T>::zeros(const std::initializer_list<int>& dims){
+    Tensor<T> zeros(const std::initializer_list<int>& dims){
         int total_size = 1;
         int nDim = dims.size();
         int* dim = new int[nDim];
@@ -148,7 +145,7 @@ namespace ts {
         return t;
     }
     template <typename T>
-    Tensor<T> Tensor<T>::ones(const std::initializer_list<int>& dims){
+    Tensor<T> ones(const std::initializer_list<int>& dims){
         int total_size = 1;
         int nDim = dims.size();
         int* dim = new int[nDim];
@@ -166,7 +163,7 @@ namespace ts {
         return t;
     }
     template <typename T>
-    Tensor<T> Tensor<T>::rand(const std::initializer_list<int>& dims){
+    Tensor<T> rand(const std::initializer_list<int>& dims){
         int total_size = 1;
         int nDim = dims.size();
         int* dim = new int[nDim];
@@ -181,7 +178,47 @@ namespace ts {
         for(int i = 0;i<total_size;i++){
             data[i] = dis(gen);
         }
+        Tensor<T> t = Tensor<T>(data,dims);
+        delete[] data;
+        delete[] dim;
+        return t;
 
+    }
+
+    template <typename T>
+    Tensor<T> eye(const int i){
+        int total_size = i*i;
+        int* dim = new int[2]{i,i};
+        T* data = new T[total_size];
+        for(int j = 0;j<total_size;j++){
+            data[j] = 0;
+        }
+        for(int j = 0;j<i;j++){
+            data[j*i+j] = 1;
+        }
+        Tensor<T> t = Tensor<T>(data,{i,i});
+        delete[] data;
+        delete[] dim;
+        return t;
+    }
+
+    template <typename T>
+    Tensor<T> full(const std::initializer_list<int>& dims, T value){
+        int total_size = 1;
+        int nDim = dims.size();
+        int* dim = new int[nDim];
+        for(int i = 0;i<nDim;i++){
+            dim[i] = *(dims.begin()+i);
+            total_size *= dim[i];
+        }
+        T* data = new T[total_size];
+        for(int i = 0;i<total_size;i++){
+            data[i] = value;
+        }
+        Tensor<T> t = Tensor<T>(data,dims);
+        delete[] data;
+        delete[] dim;
+        return t;
     }
 }
 #endif // TS_TENSOR_H
