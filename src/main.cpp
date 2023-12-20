@@ -32,4 +32,17 @@ int main(){
     std::cout<<t13<<std::endl;
     ts::Tensor<double> t14 = ts::permute(t13,{1,0,2});
     std::cout<<t14<<std::endl;
+    ts::Tensor<double> t15 = t14(0);
+    std::cout<<t15<<std::endl;
+    std::cout<<t15.size()<<" "<<t15.type()<<" "<<t15.data_ptr()<<" "<<t15.stride()<<" "<<t15.total_size()<<std::endl;
+    ts::Tensor<double> t16 = t14(0,{1,4});
+    std::cout<<t16<<std::endl;
+    std::cout<<t16.size()<<" "<<t16.type()<<" "<<t16.data_ptr()<<" "<<t16.stride() << " " <<t16.total_size()<<std::endl;
+    t14(1,{1,3}) = {0,1,2,3,4};
+    std::cout<<t14<<std::endl;
+
+    ts::Tensor<double> t17 = ts::Tensor<double>(new double[8]{1,2,3,4,5,6,7,8},{2,2,2});
+    ts::Tensor<double> t18 = ts::Tensor<double>(new double[12]{11,22,33,44,55,66,77,88,99,1010,1111,1212},{2,3,2});
+    ts::Tensor<double> t19 = ts::concat(t17,t18,1);
+    std::cout<<t19<<std::endl;
 }

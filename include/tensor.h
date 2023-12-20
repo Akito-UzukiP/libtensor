@@ -34,6 +34,7 @@ namespace ts {
         public:
             Tensor();  // Default constructor
             Tensor(T* pData, const std::initializer_list<int>& dims); // Constructor
+            Tensor(T* pData, const int* dims, const int nDim); // Constructor
             Tensor(const Tensor<T>& t); // Shallow Copy constructor
             Tensor<T>& operator=(const Tensor<T>& t); // Copy assignment operator
             ~Tensor(); // Destructor
@@ -43,6 +44,9 @@ namespace ts {
             std::string type() const; // Return the type of the elements
             std::string stride() const; // Return the stride of each dimension
             T* data_ptr() const; // Return a pointer to the elements
+
+           // inline T& Tensor<T>::getPointerAtIndex(int oneDIndex); // 将一维索引转化为实际多维索引处的引用
+
             //print方法
 
             template <typename U>
@@ -50,8 +54,9 @@ namespace ts {
 
             // 重载运算符
             T& operator()(std::initializer_list<int> indices);  // 返回指定索引的元素
-            // Tensor<T> operator()(int dim_index);  // 返回指定维度的切片
-            // Tensor<T> operator()(int dim_index, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
+            Tensor<T> operator()(int dim_index);  // 返回指定维度(n-1维)
+            Tensor<T> operator()(int dim_index, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
+            Tensor<T> operator()(std::initializer_list<int> dim_target, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
 
             // View操作
             Tensor<T> view(const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
@@ -68,15 +73,16 @@ namespace ts {
             template <typename U>
             friend Tensor<U> permute(const Tensor<U> org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但维度顺序不同
             // Slice操作
-            // TODO
+            // TODO 在上面的operator()中实现
 
             // Concat操作
             // TODO
+            template <typename U>
+            friend Tensor<U> concat(const Tensor<U> t1, const Tensor<U> t2, const int axis); // 返回一个新的张量，且是t1和t2在axis维度上的拼接，并且新创建内存空间
 
             // Mutate操作
             // TODO
             Tensor<T>& operator=(std::initializer_list<T> l); // 用列表中的元素替换张量中的元素
-
     };
 
     // Default constructor
@@ -101,6 +107,29 @@ namespace ts {
         }
         for(int i = dims.size()-1;i>=0;i--){
             if(i == dims.size()-1){
+                m_strides[i] = 1;
+            }else{
+                m_strides[i] = m_strides[i+1]*m_dims[i+1];
+            }
+        }
+        m_pData = std::shared_ptr<T[]>(new T[m_total_size]);
+        for(int i = 0;i<m_total_size;i++){
+            m_pData.get()[i] = pData[i];
+        }
+    }
+    template <typename T>
+    Tensor<T>::Tensor(T* pData, const int* dims, const int nDim){
+        m_nDim = nDim;
+        m_total_size = 1;
+        m_dims = new int[m_nDim];
+        m_strides = new int[m_nDim];
+        m_start_index = 0;
+        for(int i = 0;i<nDim;i++){
+            m_dims[i] = dims[i];
+            m_total_size *= m_dims[i];
+        }
+        for(int i = nDim-1;i>=0;i--){
+            if(i == nDim-1){
                 m_strides[i] = 1;
             }else{
                 m_strides[i] = m_strides[i+1]*m_dims[i+1];
@@ -150,6 +179,7 @@ namespace ts {
     template <typename T>
     Tensor<T>::~Tensor() {
         delete[] m_dims;
+        delete[] m_strides;
     }
 
     // Return the size of each dimension
@@ -198,41 +228,6 @@ namespace ts {
         return m_pData.get();
     }
 
-    // 递归地打印张量，这里的递归是在维度上的递归，每个维度上for循环自己的dim大小次，每次++自己的stride到传进来的index上，如果是最内层就打印，否则就递归调用自己给下一层
-
-    // template <typename T>
-    // void Tensor<T>::printTensor(std::ostream &os, int dim, int* indices) const {
-    //     if (dim == m_nDim) { // 如果是最内层
-    //         int index = 0;
-    //         for (int i = 0; i < m_nDim; ++i) {
-    //             index += indices[i] * m_strides[i];
-    //         }
-    //         os << m_pData.get()[index];
-    //         return;
-    //     }
-
-    //     os << "[";
-    //     for (int i = 0; i < m_dims[dim]; ++i) {
-    //         indices[dim] = i;
-    //         printTensor(os, dim + 1, indices);
-    //         if (i < m_dims[dim] - 1) {
-    //             os << ", ";
-    //         }
-    //     }
-    //     os << "]";
-    // }
-
-    // template <typename U>
-    // std::ostream & operator<<(std::ostream & os, const Tensor<U> & m){
-    //     if(m.m_nDim == 0){
-    //         os << "[]";
-    //         return os;
-    //     }
-    //     int* indices = new int[m.m_nDim]();
-    //     m.printTensor(os,0,indices);
-    //     delete[] indices;
-    //     return os;
-    // }
     template <typename U>
     std::ostream &operator<<(std::ostream &os, const Tensor<U> &m) {
         if (m.m_nDim == 0) {
@@ -314,6 +309,25 @@ namespace ts {
         delete[] dim;
         return t;
     }
+    // template <typename T>
+    // Tensor<T> ones(const int* dims, const int nDim){
+    //     int total_size = 1;
+    //     int* dim = new int[nDim];
+    //     for(int i = 0;i<nDim;i++){
+    //         total_size *= *(dims.begin+i);
+    //     }
+    //     T* data = new T[total_size];
+    //     for(int i = 0;i<total_size;i++){
+    //         data[i] = 1;
+    //     }
+    //     Tensor<T> t = Tensor<T>(data,dims);
+    //     delete[] data;
+    //     return t;
+    // }
+
+
+
+
     template <typename T>
     Tensor<T> rand(const std::initializer_list<int>& dims){
         int total_size = 1;
@@ -515,12 +529,187 @@ namespace ts {
         if(l.size() != m_total_size){
             throw std::invalid_argument("Mutate操作的目标维度大小与原张量不匹配");
         }
-        int i = 0;
-        for(auto it = l.begin();it != l.end();it++){
-            m_pData.get()[i] = *it;
-            i++;
+
+        std::vector<int> indices(m_nDim, 0); // 初始化索引向量
+        auto it = l.begin(); // 初始化列表的迭代器
+        bool done = false;
+
+        while (!done) {
+            // 计算当前索引下的一维索引
+            int index = m_start_index;
+            for (int i = 0; i < m_nDim; ++i) {
+                index += indices[i] * m_strides[i];
+            }
+
+            // 使用迭代器值更新张量元素
+            m_pData.get()[index] = *it;
+            ++it;
+
+            // 更新索引并检查是否完成
+            for (int dim = m_nDim - 1; dim >= 0; dim--) {
+                if (indices[dim] < m_dims[dim] - 1) {
+                    indices[dim]++;
+                    break;
+                } else {
+                    if (dim == 0) done = true;
+                    indices[dim] = 0;
+                }
+            }
         }
+
         return *this;
     }
+
+
+
+    // Slice操作
+    template <typename T>
+    Tensor<T> Tensor<T>::operator()(int dim_index) {
+        if(dim_index >= m_nDim || dim_index < 0){
+            throw std::invalid_argument("Slice操作的维度超出张量维度");
+        }
+        Tensor<T> sliced_view = *this;
+        sliced_view.m_start_index += sliced_view.m_strides[0] * dim_index;
+        sliced_view.m_nDim -= 1;
+        sliced_view.m_dims = new int[sliced_view.m_nDim];
+        sliced_view.m_strides = new int[sliced_view.m_nDim];
+        sliced_view.m_total_size = 1;
+        for(int i = 0; i < sliced_view.m_nDim; i++){
+            sliced_view.m_dims[i] = m_dims[i + 1];
+            sliced_view.m_strides[i] = m_strides[i + 1];
+            sliced_view.m_total_size *= sliced_view.m_dims[i];
+        }
+        return sliced_view;
+    }
+
+    template <typename T>
+    Tensor<T> Tensor<T>::operator()(int dim_index, std::initializer_list<int> indices){
+        if(dim_index >= m_nDim || dim_index < 0){
+            throw std::invalid_argument("Slice操作的维度超出张量维度");
+        }
+        Tensor<T> sliced_view = *this;
+        sliced_view.m_start_index += sliced_view.m_strides[0] * dim_index + *(indices.begin()) * sliced_view.m_strides[1];
+        sliced_view.m_nDim -= 1;
+        sliced_view.m_total_size /= m_dims[0];
+        sliced_view.m_dims = new int[sliced_view.m_nDim];
+        sliced_view.m_strides = new int[sliced_view.m_nDim];
+        for(int i = 0; i < sliced_view.m_nDim; i++){
+            sliced_view.m_dims[i] = m_dims[i + 1];
+            sliced_view.m_strides[i] = m_strides[i + 1];
+        }
+        sliced_view.m_total_size = sliced_view.m_total_size / m_dims[1] * (indices.end()-1 - indices.begin());
+        sliced_view.m_dims[0] = indices.end()-1 - indices.begin();
+        return sliced_view;
+    }
+
+    template <typename U>
+    Tensor<U> concat(const Tensor<U> t1, const Tensor<U> t2, const int axis){
+        /*
+            思路：先做完合法性检查
+                构建一个新的张量，然后把t1和t2的数据按照axis的位置拼接到新的张量上
+        
+        */
+        if(t1.m_nDim != t2.m_nDim){
+            throw std::invalid_argument("Concat操作的两个张量维度不匹配");
+        }
+        if(axis >= t1.m_nDim || axis < 0){
+            throw std::invalid_argument("Concat操作的维度超出张量维度");
+        }
+        for(int i = 0;i<t1.m_nDim;i++){
+            if(i != axis && t1.m_dims[i] != t2.m_dims[i]){
+                throw std::invalid_argument("Concat操作的两个张量在非拼接维度上的维度不匹配");
+            }
+        }
+        int* dim = new int[t1.m_nDim];
+        for(int i = 0;i<t1.m_nDim;i++){
+            dim[i] = t1.m_dims[i];
+        }
+        dim[axis] = t1.m_dims[axis] + t2.m_dims[axis];
+        std::vector<int> dims(t1.m_nDim);
+        for(int i = 0;i<t1.m_nDim;i++){
+            dims[i] = dim[i];
+        }
+        Tensor<U> t = Tensor<U>(t1.m_pData.get(),dim,t1.m_nDim);
+
+
+        // 把t1的数据赋值到t上
+        std::vector<int> indices(t1.m_nDim, 0);  // 用于存储当前索引的向量
+        std::vector<bool> dimensionEntered(t1.m_nDim, false); // 用于跟踪是否进入了一个新的维度
+        bool done = false;
+        while (!done) {
+            // 遍历维度
+            for (int dim = 0; dim < t1.m_nDim; dim++) {
+                if (!dimensionEntered[dim]) {
+                    dimensionEntered[dim] = true;
+                }
+            }
+
+            // 计算当前索引下的值
+            int index = t1.m_start_index;
+            for (int i = 0; i < t1.m_nDim; ++i) {
+                index += indices[i] * t1.m_strides[i];
+            }
+            int target_index = t.m_start_index;
+            for (int i = 0; i < t.m_nDim; ++i) {
+                target_index += indices[i] * t.m_strides[i];
+            }
+            t.m_pData.get()[target_index] =  t1.m_pData.get()[index];
+
+            // 更新索引并检查是否完成
+            for (int dim = t1.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
+                if (indices[dim] < t1.m_dims[dim] - 1) { 
+                    indices[dim]++;
+                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
+                    break;
+                } else {
+                    if (dim == 0) done = true; // 如果最外层都到头了就结束
+                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
+                }
+            }
+        }
+        // 把t1的数据赋值到t上
+        std::fill(indices.begin(),indices.end(),0);
+        std::fill(dimensionEntered.begin(),dimensionEntered.end(),false);
+        done = false;
+        while (!done) {
+            // 遍历维度
+            for (int dim = 0; dim < t2.m_nDim; dim++) {
+                if (!dimensionEntered[dim]) {
+                    dimensionEntered[dim] = true;
+                }
+            }
+
+            // 计算当前索引下的值
+            int index = t2.m_start_index;
+            for (int i = 0; i < t2.m_nDim; ++i) {
+                index += indices[i] * t2.m_strides[i];
+            }
+            int target_index = t.m_start_index;
+            for (int i = 0; i < t.m_nDim; ++i) {
+                if(i == axis){
+                    target_index += (indices[i] + t1.m_dims[i]) * t.m_strides[i];
+                }else{
+                    target_index += indices[i] * t.m_strides[i];
+                }
+            }
+            t.m_pData.get()[target_index] =  t2.m_pData.get()[index];
+
+            // 更新索引并检查是否完成
+            for (int dim = t2.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
+                if (indices[dim] < t2.m_dims[dim] - 1) { 
+                    indices[dim]++;
+                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
+                    break;
+                } else {
+                    if (dim == 0) done = true; // 如果最外层都到头了就结束
+                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
+                }
+            }
+        }
+        return t;
+
+    }
+
+
 }
 #endif // TS_TENSOR_H
