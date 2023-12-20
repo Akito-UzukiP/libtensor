@@ -3,7 +3,7 @@
 int main(){
     ts::Tensor<double> t1 = ts::Tensor<double>(new double[8]{1,2,3,4,5,6,7,8},{2,2,2});
     std::cout<<t1<<std::endl;
-    std::cout<<t1.size()<<" "<<t1.type()<<" "<<t1.data_ptr()<<std::endl;
+    std::cout<<t1.size()<<" "<<t1.type()<<" "<<t1.data_ptr()<<" "<<t1.stride()<<std::endl;
     ts::Tensor<double> t2 = ts::zeros<double>({2,2,2});
     std::cout<<t2<<std::endl;
     ts::Tensor<double> t3 = ts::ones<double>({2,2,2});
@@ -14,4 +14,22 @@ int main(){
     std::cout<<t5<<std::endl;
     ts::Tensor<double> t6 = ts::full<double>({2,2,2},3.45);
     std::cout<<t6<<std::endl;
+    t6({0,0,0}) = 1;
+    std::cout<<t6<<std::endl;
+    ts::Tensor<double> t7 = t1.view({4,2});
+    std::cout<<t7<<std::endl;
+    ts::Tensor<double> t8 = ts::view(t1,{8,1});
+    std::cout<<t8<<std::endl;
+    ts::Tensor<double> t9 = ts::transpose(t1,0,2);
+    std::cout<<t9<<std::endl;
+    ts::Tensor<double> t10 = t1.transpose(0,1);
+    std::cout<<t10<<std::endl;
+    ts::Tensor<double> t11 = ts::arange<double>(0,60,1);
+    std::cout<<t11<<std::endl;
+    ts::Tensor<double> t12 = t11.view({3,4,5});
+    std::cout<<t12<<std::endl;
+    ts::Tensor<double> t13 = t12.permute({1,0,2});
+    std::cout<<t13<<std::endl;
+    ts::Tensor<double> t14 = ts::permute(t13,{1,0,2});
+    std::cout<<t14<<std::endl;
 }
