@@ -45,4 +45,12 @@ int main(){
     ts::Tensor<double> t18 = ts::Tensor<double>(new double[12]{11,22,33,44,55,66,77,88,99,1010,1111,1212},{2,3,2});
     ts::Tensor<double> t19 = ts::concat(t17,t18,1);
     std::cout<<t19<<std::endl;
+    ts::Tensor<bool> t20 = ts::full({1,2,3,4},true);
+    std::cout<<t20<<std::endl;
+    ts::Tensor<bool> t21 = ts::full({4,3,6,1},false);
+    t21 = ts::permute(t21,{3,2,1,0});
+    std::cout<<t21.size()<<" "<<t21.type()<<" "<<t21.data_ptr()<<" "<<t21.stride()<<" "<<t21.total_size()<<std::endl;
+    std::cout<<t21<<std::endl;
+    ts::Tensor<bool> t22 = ts::concat(t20,t21,1);
+    std::cout<<t22<<std::endl;
 }
