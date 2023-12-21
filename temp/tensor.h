@@ -84,46 +84,6 @@ namespace ts {
             // Mutate操作
             // TODO
             Tensor<T>& operator=(std::initializer_list<T> l); // 用列表中的元素替换张量中的元素
-
-
-            // 基础数学计算
-            // 基础的point-wise计算
-            Tensor<T> operator+(const Tensor<T>& t); // 张量加法
-            Tensor<T> operator-(const Tensor<T>& t); // 张量减法
-            Tensor<T> operator*(const Tensor<T>& t); // 张量乘法
-            Tensor<T> operator/(const Tensor<T>& t); // 张量除法
-            Tensor<T> operator%(const Tensor<T>& t); // 张量求余
-
-            Tensor<T> add(const Tensor<T>& t); // 张量加法
-            template <typename U>
-            friend Tensor<U> add(const Tensor<U>& t1, const Tensor<U>& t2); // 张量加法
-            Tensor<T> sub(const Tensor<T>& t); // 张量减法
-            template <typename U>
-            friend Tensor<U> sub(const Tensor<U>& t1, const Tensor<U>& t2); // 张量减法
-            Tensor<T> mul(const Tensor<T>& t); // 张量乘法
-            template <typename U>
-            friend Tensor<U> mul(const Tensor<U>& t1, const Tensor<U>& t2); // 张量乘法
-            Tensor<T> div(const Tensor<T>& t); // 张量除法
-            template <typename U>
-            friend Tensor<U> div(const Tensor<U>& t1, const Tensor<U>& t2); // 张量除法
-
-            // 矩阵乘法
-            Tensor<T> matmul(const Tensor<T>& t); // 矩阵乘法
-            template <typename U>
-            friend Tensor<U> matmul(const Tensor<U>& t1, const Tensor<U>& t2); // 矩阵乘法
-
-            // 基础的reduction计算
-            Tensor<T> sum(const int dim); // 按照指定维度求和
-            Tensor<T> mean(const int dim); // 按照指定维度求平均
-            Tensor<T> max(const int dim); // 按照指定维度求最大值
-            Tensor<T> min(const int dim); // 按照指定维度求最小值
-            Tensor<T> argmax(const int dim); // 按照指定维度求最大值的索引
-            Tensor<T> argmin(const int dim); // 按照指定维度求最小值的索引
-            Tensor<T> norm(const int dim); // 按照指定维度求范数
-            Tensor<T> norm(const int dim, const int p); // 按照指定维度求p范数  
-            Tensor<T> norm(const int dim, const int p, const int keepdim); // 按照指定维度求p范数，keepdim表示是否保持维度
-
-
     };
 
     // Default constructor
@@ -758,8 +718,6 @@ namespace ts {
                 }
             }
         }
-        delete[] dim;
-
         return t;
 
     }
