@@ -102,6 +102,8 @@ namespace ts {
             friend Tensor<U> operator*(const Tensor<U>& t1, const Tensor<U>& t2); // 张量乘法
             template <typename U>
             friend Tensor<U> operator/(const Tensor<U>& t1, const Tensor<U>& t2); // 张量除法
+            template <typename U>
+            friend Tensor<U> log(const Tensor<U>& lhs); // 张量取对数
 
             Tensor<T> add(const Tensor<T>& t); // 张量加法
             template <typename U>
