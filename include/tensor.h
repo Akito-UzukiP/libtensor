@@ -34,8 +34,8 @@ namespace ts {
         public:
             Tensor();  // Default constructor
             Tensor(T* pData, const std::initializer_list<int>& dims); // Constructor
-            Tensor(T* pData, const int* dims, const int nDim); // Constructor
-            Tensor(const Tensor<T>& t); // Shallow Copy constructor
+            Tensor(T* pData, const int* dims, const int nDim); // Hard Copy Constructor
+            Tensor(const Tensor<T>& t, bool shallow_copy = true); // Shallow Copy constructor
             Tensor<T>& operator=(const Tensor<T>& t); // Copy assignment operator
             ~Tensor(); // Destructor
             
@@ -88,11 +88,20 @@ namespace ts {
 
             // 基础数学计算
             // 基础的point-wise计算
-            Tensor<T> operator+(const Tensor<T>& t); // 张量加法
-            Tensor<T> operator-(const Tensor<T>& t); // 张量减法
-            Tensor<T> operator*(const Tensor<T>& t); // 张量乘法
-            Tensor<T> operator/(const Tensor<T>& t); // 张量除法
-            Tensor<T> operator%(const Tensor<T>& t); // 张量求余
+            // Tensor<T> operator+(const Tensor<T>& t); // 张量加法
+            // Tensor<T> operator-(const Tensor<T>& t); // 张量减法
+            // Tensor<T> operator*(const Tensor<T>& t); // 张量乘法
+            // Tensor<T> operator/(const Tensor<T>& t); // 张量除法
+            // Tensor<T> operator%(const Tensor<T>& t); // 张量求余
+
+            template <typename U>
+            friend Tensor<U> operator+(const Tensor<U>& t1, const Tensor<U>& t2); // 张量加法
+            template <typename U>
+            friend Tensor<U> operator-(const Tensor<U>& t1, const Tensor<U>& t2); // 张量减法
+            template <typename U>
+            friend Tensor<U> operator*(const Tensor<U>& t1, const Tensor<U>& t2); // 张量乘法
+            template <typename U>
+            friend Tensor<U> operator/(const Tensor<U>& t1, const Tensor<U>& t2); // 张量除法
 
             Tensor<T> add(const Tensor<T>& t); // 张量加法
             template <typename U>
@@ -184,7 +193,7 @@ namespace ts {
 
     // Shallow Copy constructor
     template <typename T> 
-    Tensor<T>::Tensor(const Tensor<T>& other){
+    Tensor<T>::Tensor(const Tensor<T>& other, bool shallow_copy){
         m_nDim = other.m_nDim;
         m_total_size = other.m_total_size;
         m_dims = new int[m_nDim];
@@ -194,7 +203,12 @@ namespace ts {
             m_dims[i] = other.m_dims[i];
             m_strides[i] = other.m_strides[i];
         }
-        m_pData = other.m_pData;
+        if(shallow_copy){
+            m_pData = other.m_pData;
+        }else{
+            m_pData = std::shared_ptr<T[]>(new T[m_total_size]);
+            
+        }
     }
 
     // Shallow Copy assignment operator
@@ -475,7 +489,21 @@ namespace ts {
         if(total_size != this->m_total_size){
             throw "View操作的目标维度大小与原张量不匹配";
         }
-        return Tensor<T>(m_pData.get(),dims);
+        Tensor<T> t = *this;
+        t.m_nDim = dims.size();
+        t.m_dims = new int[t.m_nDim];
+        t.m_strides = new int[t.m_nDim];
+        for(int i = 0;i<dims.size();i++){
+            t.m_dims[i] = *(dims.begin()+i);
+        }
+        for(int i = dims.size()-1;i>=0;i--){
+            if(i == dims.size()-1){
+                t.m_strides[i] = 1;
+            }else{
+                t.m_strides[i] = t.m_strides[i+1]*t.m_dims[i+1];
+            }
+        }
+        return t;
     }
     template <typename U>
     Tensor<U> view(const Tensor<U> org, const std::initializer_list<int>& dims){
@@ -486,7 +514,21 @@ namespace ts {
         if(total_size != org.m_total_size){
             throw std::invalid_argument("View操作的目标维度大小与原张量不匹配");
         }
-        return Tensor<U>(org.m_pData.get(),dims);
+        Tensor<U> t = org;
+        t.m_nDim = dims.size();
+        t.m_dims = new int[t.m_nDim];
+        t.m_strides = new int[t.m_nDim];
+        for(int i = 0;i<dims.size();i++){
+            t.m_dims[i] = *(dims.begin()+i);
+        }
+        for(int i = dims.size()-1;i>=0;i--){
+            if(i == dims.size()-1){
+                t.m_strides[i] = 1;
+            }else{
+                t.m_strides[i] = t.m_strides[i+1]*t.m_dims[i+1];
+            }
+        }
+        return t;
     }
 
     template <typename T>
