@@ -33,6 +33,7 @@ namespace ts {
 
         public:
             Tensor();  // Default constructor
+            Tensor(const int* dims, const int nDim); // Constructor
             Tensor(T* pData, const std::initializer_list<int>& dims); // Constructor
             Tensor(T* pData, const int* dims, const int nDim); // Hard Copy Constructor
             Tensor(const Tensor<T>& t, bool shallow_copy = true); // Shallow Copy constructor
@@ -92,14 +93,6 @@ namespace ts {
             Tensor<T>& operator=(std::initializer_list<T> l); // 用列表中的元素替换张量中的元素
 
 
-            // 基础数学计算
-            // 基础的point-wise计算
-            // Tensor<T> operator+(const Tensor<T>& t); // 张量加法
-            // Tensor<T> operator-(const Tensor<T>& t); // 张量减法
-            // Tensor<T> operator*(const Tensor<T>& t); // 张量乘法
-            // Tensor<T> operator/(const Tensor<T>& t); // 张量除法
-            // Tensor<T> operator%(const Tensor<T>& t); // 张量求余
-
             template <typename U>
             friend Tensor<U> operator+(const Tensor<U>& t1, const Tensor<U>& t2); // 张量加法
             template <typename U>
@@ -131,15 +124,48 @@ namespace ts {
 
             // 基础的reduction计算
             Tensor<T> sum(const int dim); // 按照指定维度求和
+            template <typename U>
+            friend Tensor<U> sum(const Tensor<U>& t, const int dim); // 按照指定维度求和
             Tensor<T> mean(const int dim); // 按照指定维度求平均
+            template <typename U>
+            friend Tensor<U> mean(const Tensor<U>& t, const int dim); // 按照指定维度求平均
             Tensor<T> max(const int dim); // 按照指定维度求最大值
+            template <typename U>
+            friend Tensor<U> max(const Tensor<U>& t, const int dim); // 按照指定维度求最大值
             Tensor<T> min(const int dim); // 按照指定维度求最小值
-            Tensor<T> argmax(const int dim); // 按照指定维度求最大值的索引
-            Tensor<T> argmin(const int dim); // 按照指定维度求最小值的索引
-            Tensor<T> norm(const int dim); // 按照指定维度求范数
-            Tensor<T> norm(const int dim, const int p); // 按照指定维度求p范数  
-            Tensor<T> norm(const int dim, const int p, const int keepdim); // 按照指定维度求p范数，keepdim表示是否保持维度
+            template <typename U>
+            friend Tensor<U> min(const Tensor<U>& t, const int dim); // 按照指定维度求最小值
+            // Tensor<T> argmax(const int dim); // 按照指定维度求最大值的索引
+            // Tensor<T> argmin(const int dim); // 按照指定维度求最小值的索引
+            // Tensor<T> norm(const int dim); // 按照指定维度求范数
+            // Tensor<T> norm(const int dim, const int p); // 按照指定维度求p范数  
+            // Tensor<T> norm(const int dim, const int p, const int keepdim); // 按照指定维度求p范数，keepdim表示是否保持维度
 
+            //比较，有: gt ge lt le eq ne
+            Tensor<T> gt(const Tensor<T>& t); // 大于
+            template <typename U>
+            friend Tensor<U> gt(const Tensor<U>& t1, const Tensor<U>& t2); // 大于
+            Tensor<bool> operator>(const Tensor<T>& t); // 等于
+            Tensor<T> ge(const Tensor<T>& t); // 大于等于
+            template <typename U>
+            friend Tensor<U> ge(const Tensor<U>& t1, const Tensor<U>& t2); // 大于等于
+            Tensor<bool> operator>=(const Tensor<T>& t); // 等于
+            Tensor<T> lt(const Tensor<T>& t); // 小于
+            template <typename U>
+            friend Tensor<U> lt(const Tensor<U>& t1, const Tensor<U>& t2); // 小于
+            Tensor<bool> operator<(const Tensor<T>& t); // 等于
+            Tensor<T> le(const Tensor<T>& t); // 小于等于
+            template <typename U>
+            friend Tensor<U> le(const Tensor<U>& t1, const Tensor<U>& t2); // 小于等于
+            Tensor<bool> operator<=(const Tensor<T>& t); // 等于
+            Tensor<T> eq(const Tensor<T>& t); // 等于
+            template <typename U>
+            friend Tensor<U> eq(const Tensor<U>& t1, const Tensor<U>& t2); // 等于
+            Tensor<bool> operator==(const Tensor<T>& t); // 等于
+            Tensor<T> ne(const Tensor<T>& t); // 不等于
+            template <typename U>
+            friend Tensor<U> ne(const Tensor<U>& t1, const Tensor<U>& t2); // 不等于
+            Tensor<bool> operator!=(const Tensor<T>& t); // 不等于
 
             class _Iterator;
             class _Const_Iterator;
@@ -153,6 +179,27 @@ namespace ts {
         m_total_size = 0;
         m_dims = nullptr;
         m_pData = nullptr;
+    }
+
+    template <typename T>
+    Tensor<T>::Tensor(const int* dims, const int nDim){
+        m_nDim = nDim;
+        m_total_size = 1;
+        m_dims = new int[m_nDim];
+        m_strides = new int[m_nDim];
+        m_start_index = 0;
+        for(int i = 0;i<nDim;i++){
+            m_dims[i] = dims[i];
+            m_total_size *= m_dims[i];
+        }
+        for(int i = nDim-1;i>=0;i--){
+            if(i == nDim-1){
+                m_strides[i] = 1;
+            }else{
+                m_strides[i] = m_strides[i+1]*m_dims[i+1];
+            }
+        }
+        m_pData = std::shared_ptr<T[]>(new T[m_total_size]);
     }
 
     template <typename T>
@@ -368,6 +415,24 @@ namespace ts {
         delete[] dim;
         return t;
     }
+    template <typename T>
+    Tensor<T> zeros(const int* dims, const int nDim){
+        int total_size = 1;
+        int* dim = new int[nDim];
+        for(int i = 0;i<nDim;i++){
+            dim[i] = dims[i];
+            total_size *= dim[i];
+        }
+        T* data = new T[total_size];
+        for(int i = 0;i<total_size;i++){
+            data[i] = 0;
+        }
+        Tensor<T> t = Tensor<T>(data,dims,nDim);
+        delete[] data;
+        delete[] dim;
+        return t;
+    }
+
     template <typename T>
     Tensor<T> ones(const std::initializer_list<int>& dims){
         int total_size = 1;

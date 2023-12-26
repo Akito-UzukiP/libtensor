@@ -2,7 +2,6 @@
 #define ITERATOR_H
 #include "tensor_basic.h"
 
-
 namespace ts{
 // _Iterator 类的定义
 template <typename T>
@@ -54,6 +53,20 @@ public:
         }
     }
     _Iterator(Tensor<T>* pTensor, std::initializer_list<int> dim_order){
+        m_pTensor = pTensor;
+        _index = 0;
+        _indices = new int[m_pTensor->m_nDim];
+        std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
+        _done = false;
+        _dim_order = new int[dim_order.size()];
+        _dim_order_size = dim_order.size();
+        _dim_order_entered = new bool[dim_order.size()];
+        for(int i = 0;i<dim_order.size();i++){
+            _dim_order[i] = *(dim_order.begin()+i);
+        }
+
+    }
+    _Iterator(Tensor<T>* pTensor, std::vector<int> dim_order){
         m_pTensor = pTensor;
         _index = 0;
         _indices = new int[m_pTensor->m_nDim];

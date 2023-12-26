@@ -352,6 +352,326 @@ namespace ts{
         return res.view(dims,nDim);
     }
 
+    template<typename U>
+    Tensor<U> sum(const Tensor<U>& t, int dim){
+        if(dim < 0 || dim >= t.m_nDim){
+            throw std::invalid_argument("Invalid dimension.");
+        }
+        int* dims = new int[t.m_nDim-1];
+        int nDim = t.m_nDim-1;
+        int j = 0;
+        for(int i = 0; i < t.m_nDim; i++){
+            if(i != dim){
+                dims[j] = t.m_dims[i];
+                j++;
+            }
+        }
+        Tensor<U> res(dims,nDim);
+        int* dim_order = new int[t.m_nDim];
+        int i = 0;
+        dim_order[t.m_nDim-1] = dim;
+        for(int j = 0; j < t.m_nDim; j++){
+            if(j != dim){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+
+        typename Tensor<U>::_Const_Iterator it(&t,dim_order,t.m_nDim);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it.done()){
+            for(int i = 0;i<t.m_dims[dim];i++){
+                *it_res += *it;
+                it++;
+            }
+            it_res++;
+        }
+
+        return res;
+    }
+    template<typename T>
+    Tensor<T> Tensor<T>::sum( int dim){
+        if(dim < 0 || dim >= m_nDim){
+            throw std::invalid_argument("Invalid dimension.");
+        }
+        int* dims = new int[m_nDim-1];
+        int nDim = m_nDim-1;
+        int j = 0;
+        for(int i = 0; i < m_nDim; i++){
+            if(i != dim){
+                dims[j] = m_dims[i];
+                j++;
+            }
+        }
+        Tensor<T> res(dims,nDim);
+        int* dim_order = new int[m_nDim];
+        int i = 0;
+        dim_order[m_nDim-1] = dim;
+        for(int j = 0; j < m_nDim; j++){
+            if(j != dim){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+
+        typename Tensor<T>::_Const_Iterator it(this,dim_order,m_nDim);
+        typename Tensor<T>::_Iterator it_res(&res);
+        while(!it.done()){
+            for(int i = 0;i<m_dims[dim];i++){
+                *it_res += *it;
+                it++;
+            }
+            it_res++;
+        }
+
+        return res;
+    }
+
+    template<typename U>
+    Tensor<U> mean(const Tensor<U>& t, int dim){
+        if(dim < 0 || dim >= t.m_nDim){
+            throw std::invalid_argument("Invalid dimension.");
+        }
+        int* dims = new int[t.m_nDim-1];
+        int nDim = t.m_nDim-1;
+        int j = 0;
+        for(int i = 0; i < t.m_nDim; i++){
+            if(i != dim){
+                dims[j] = t.m_dims[i];
+                j++;
+            }
+        }
+        Tensor<U> res(dims,nDim);
+        int* dim_order = new int[t.m_nDim];
+        int i = 0;
+        dim_order[t.m_nDim-1] = dim;
+        for(int j = 0; j < t.m_nDim; j++){
+            if(j != dim){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+
+        typename Tensor<U>::_Const_Iterator it(&t,dim_order,t.m_nDim);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it.done()){
+            for(int i = 0;i<t.m_dims[dim];i++){
+                *it_res += *it;
+                it++;
+            }
+            *it_res /= t.m_dims[dim];
+            it_res++;
+        }
+
+        return res;
+    }
+    template<typename T>
+    Tensor<T> Tensor<T>::mean( int dim){
+        if(dim < 0 || dim >= m_nDim){
+            throw std::invalid_argument("Invalid dimension.");
+        }
+        int* dims = new int[m_nDim-1];
+        int nDim = m_nDim-1;
+        int j = 0;
+        for(int i = 0; i < m_nDim; i++){
+            if(i != dim){
+                dims[j] = m_dims[i];
+                j++;
+            }
+        }
+        Tensor<T> res(dims,nDim);
+        int* dim_order = new int[m_nDim];
+        int i = 0;
+        dim_order[m_nDim-1] = dim;
+        for(int j = 0; j < m_nDim; j++){
+            if(j != dim){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+
+        typename Tensor<T>::_Const_Iterator it(this,dim_order,m_nDim);
+        typename Tensor<T>::_Iterator it_res(&res);
+        while(!it.done()){
+            for(int i = 0;i<m_dims[dim];i++){
+                *it_res += *it;
+                it++;
+            }
+            *it_res /= m_dims[dim];
+            it_res++;
+        }
+
+        return res;
+    }
+
+    template<typename U>
+    Tensor<U> max(const Tensor<U>& t, int dim){
+        if(dim < 0 || dim >= t.m_nDim){
+            throw std::invalid_argument("Invalid dimension.");
+        }
+        int* dims = new int[t.m_nDim-1];
+        int nDim = t.m_nDim-1;
+        int j = 0;
+        for(int i = 0; i < t.m_nDim; i++){
+            if(i != dim){
+                dims[j] = t.m_dims[i];
+                j++;
+            }
+        }
+        Tensor<U> res(dims,nDim);
+        int* dim_order = new int[t.m_nDim];
+        int i = 0;
+        dim_order[t.m_nDim-1] = dim;
+        for(int j = 0; j < t.m_nDim; j++){
+            if(j != dim){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+
+        typename Tensor<U>::_Const_Iterator it(&t,dim_order,t.m_nDim);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it.done()){
+            for(int i = 0;i<t.m_dims[dim];i++){
+                if(i == 0){
+                    *it_res = *it;
+                }else{
+                    *it_res = std::max(*it_res,*it);
+                }
+                it++;
+            }
+            it_res++;
+        }
+
+        return res;
+    }
+    template<typename T>
+    Tensor<T> Tensor<T>::max( int dim){
+        if(dim < 0 || dim >= m_nDim){
+            throw std::invalid_argument("Invalid dimension.");
+        }
+        int* dims = new int[m_nDim-1];
+        int nDim = m_nDim-1;
+        int j = 0;
+        for(int i = 0; i < m_nDim; i++){
+            if(i != dim){
+                dims[j] = m_dims[i];
+                j++;
+            }
+        }
+        Tensor<T> res(dims,nDim);
+        int* dim_order = new int[m_nDim];
+        int i = 0;
+        dim_order[m_nDim-1] = dim;
+        for(int j = 0; j < m_nDim; j++){
+            if(j != dim){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+
+        typename Tensor<T>::_Const_Iterator it(this,dim_order,m_nDim);
+        typename Tensor<T>::_Iterator it_res(&res);
+        while(!it.done()){
+            for(int i = 0;i<m_dims[dim];i++){
+                if(i == 0){
+                    *it_res = *it;
+                }else{
+                    *it_res = std::max(*it_res , *it);
+                }
+                it++;
+            }
+            it_res++;
+        }
+
+        return res;
+    }
+
+    template<typename U>
+    Tensor<U> min(const Tensor<U>& t, int dim){
+        if(dim < 0 || dim >= t.m_nDim){
+            throw std::invalid_argument("Invalid dimension.");
+        }
+        int* dims = new int[t.m_nDim-1];
+        int nDim = t.m_nDim-1;
+        int j = 0;
+        for(int i = 0; i < t.m_nDim; i++){
+            if(i != dim){
+                dims[j] = t.m_dims[i];
+                j++;
+            }
+        }
+        Tensor<U> res(dims,nDim);
+        int* dim_order = new int[t.m_nDim];
+        int i = 0;
+        dim_order[t.m_nDim-1] = dim;
+        for(int j = 0; j < t.m_nDim; j++){
+            if(j != dim){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+
+        typename Tensor<U>::_Const_Iterator it(&t,dim_order,t.m_nDim);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it.done()){
+            for(int i = 0;i<t.m_dims[dim];i++){
+                if(i == 0){
+                    *it_res = *it;
+                }else{
+                    *it_res = std::min(*it_res,*it);
+                }
+                it++;
+            }
+            it_res++;
+        }
+
+        return res;
+    }
+    template<typename T>
+    Tensor<T> Tensor<T>::min( int dim){
+        if(dim < 0 || dim >= m_nDim){
+            throw std::invalid_argument("Invalid dimension.");
+        }
+        int* dims = new int[m_nDim-1];
+        int nDim = m_nDim-1;
+        int j = 0;
+        for(int i = 0; i < m_nDim; i++){
+            if(i != dim){
+                dims[j] = m_dims[i];
+                j++;
+            }
+        }
+        Tensor<T> res(dims,nDim);
+        int* dim_order = new int[m_nDim];
+        int i = 0;
+        dim_order[m_nDim-1] = dim;
+        for(int j = 0; j < m_nDim; j++){
+            if(j != dim){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+
+        typename Tensor<T>::_Const_Iterator it(this,dim_order,m_nDim);
+        typename Tensor<T>::_Iterator it_res(&res);
+        while(!it.done()){
+            for(int i = 0;i<m_dims[dim];i++){
+                if(i == 0){
+                    *it_res = *it;
+                }else{
+                    std::min(*it_res , *it);
+                }
+                it++;
+            }
+            it_res++;
+        }
+
+        return res;
+    }
+
+
+
   
 
 }
