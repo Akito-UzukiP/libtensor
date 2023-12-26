@@ -34,3 +34,5 @@
 /build
 /CMakeFiles
 /.vscode
+/temp
+/src/main.cpp

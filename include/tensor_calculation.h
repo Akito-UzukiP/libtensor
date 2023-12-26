@@ -1,43 +1,24 @@
 #ifndef TS_TENSOR_CALCULATION_H
 #define TS_TENSOR_CALCULATION_H
 #include "tensor.h"
+#include "iterator.h"
 #include <cmath>
 namespace ts{
 
     template<typename U>
     Tensor<U> operator+(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        Tensor<U> res = lhs;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
+        Tensor<U> res(lhs,false);
         bool done = false;
 
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = lhs.m_start_index;
-            for (int i = 0; i < lhs.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = lhs.m_pData.get()[index] + rhs.m_pData.get()[index];
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
+        typename Tensor<U>::_Const_Iterator it_rhs(&rhs);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            std::cout<<*it_lhs<<std::endl;
+            *it_res = *it_lhs + *it_rhs;
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
 
         return res;
@@ -45,156 +26,95 @@ namespace ts{
     }
     template<typename U>
     Tensor<U> operator-(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        Tensor<U> res = lhs;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
+        // 确保两个张量具有相同的维度和大小
+        if (lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims) {
+            throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        }
 
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
+        Tensor<U> res(lhs,false);
 
-            // 计算当前索引下的值
-            int index = lhs.m_start_index;
-            for (int i = 0; i < lhs.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = lhs.m_pData.get()[index] - rhs.m_pData.get()[index];
+        // 使用迭代器遍历 lhs 和 rhs
+        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
+        typename Tensor<U>::_Const_Iterator it_rhs(&rhs);
+        typename Tensor<U>::_Iterator it_res(&res);
 
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+        while (!it_res.done()) {
+            // 通过迭代器直接访问并操作张量的元素
+            *it_res = *it_lhs - *it_rhs;
+
+            // 递增迭代器
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
 
         return res;
-
     }
+
     template<typename U>
     Tensor<U> operator*(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        Tensor<U> res = lhs;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
+        // 确保两个张量具有相同的维度和大小
+        if (lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims) {
+            throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        }
 
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
+        Tensor<U> res(lhs,false);
 
-            // 计算当前索引下的值
-            int index = lhs.m_start_index;
-            for (int i = 0; i < lhs.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = lhs.m_pData.get()[index] * rhs.m_pData.get()[index];
+        // 使用迭代器遍历 lhs 和 rhs
+        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
+        typename Tensor<U>::_Const_Iterator it_rhs(&rhs);
+        typename Tensor<U>::_Iterator it_res(&res);
 
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+        while (!it_res.done()) {
+            // 通过迭代器直接访问并操作张量的元素
+            *it_res = *it_lhs * *it_rhs;
+
+            // 递增迭代器
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
 
         return res;
-
     }
+
+
     template<typename U>
     Tensor<U> operator/(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        Tensor<U> res = lhs;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
+        // 确保两个张量具有相同的维度和大小
+        if (lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims) {
+            throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        }
 
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
+        Tensor<U> res(lhs,false);
 
-            // 计算当前索引下的值
-            int index = lhs.m_start_index;
-            for (int i = 0; i < lhs.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = lhs.m_pData.get()[index] / rhs.m_pData.get()[index];
+        // 使用迭代器遍历 lhs 和 rhs
+        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
+        typename Tensor<U>::_Const_Iterator it_rhs(&rhs);
+        typename Tensor<U>::_Iterator it_res(&res);
 
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+        while (!it_res.done()) {
+            // 通过迭代器直接访问并操作张量的元素
+            *it_res = *it_lhs / *it_rhs;
+
+            // 递增迭代器
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
 
         return res;
-
     }
 
     template<typename U>
     Tensor<U> log(const Tensor<U>& lhs){
-        Tensor<U> res = lhs;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
-
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = lhs.m_start_index;
-            for (int i = 0; i < lhs.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = log(lhs.m_pData.get()[index]); 
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+        Tensor<U> res(lhs,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            *it_res = std::log(*it_lhs);
+            it_lhs++;
+            it_res++;
         }
 
         return res;
@@ -204,38 +124,15 @@ namespace ts{
 
     template<typename U>
     Tensor<U> Tensor<U>::add(const Tensor<U>& t){
-        Tensor<U> res = t;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
-
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = t.m_start_index;
-            for (int i = 0; i < t.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = this->m_pData.get()[index]+t.m_pData.get()[index]; 
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+        Tensor<U> res(t,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&t);
+        typename Tensor<U>::_Const_Iterator it_rhs(this);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            *it_res = *it_lhs + *it_rhs;
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
 
         return res;
@@ -243,77 +140,32 @@ namespace ts{
 
     template <typename U>
     Tensor<U> add(const Tensor<U>& t1, const Tensor<U>& t2){
-    Tensor<U> res = t1;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
-
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = t1.m_start_index;
-            for (int i = 0; i < t1.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = t1.m_pData.get()[index] + t2.m_pData.get()[index];
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+        Tensor<U> res(t1,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&t1);
+        typename Tensor<U>::_Const_Iterator it_rhs(&t2);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            *it_res = *it_lhs + *it_rhs;
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
+        
 
         return res;
     }
 
     template<typename U>
     Tensor<U> Tensor<U>::sub(const Tensor<U>& t){
-        Tensor<U> res = t;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
-
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = t.m_start_index;
-            for (int i = 0; i < t.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = this->m_pData.get()[index]-t.m_pData.get()[index]; 
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+        Tensor<U> res(t,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&t);
+        typename Tensor<U>::_Const_Iterator it_rhs(this);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            *it_res = *it_lhs - *it_rhs;
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
 
         return res;
@@ -322,196 +174,88 @@ namespace ts{
 
     template <typename U>
     Tensor<U> sub(const Tensor<U>& t1, const Tensor<U>& t2){
-    Tensor<U> res = t1;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
-
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = t1.m_start_index;
-            for (int i = 0; i < t1.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = t1.m_pData.get()[index] - t2.m_pData.get()[index];
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+        Tensor<U> res(t1,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&t1);
+        typename Tensor<U>::_Const_Iterator it_rhs(&t2);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            *it_res = *it_lhs - *it_rhs;
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
+        
 
         return res;
-        }
+    }
 
-        template<typename U>
-        Tensor<U> Tensor<U>::mul(const Tensor<U>& t){
-        Tensor<U> res = t;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
-
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = t.m_start_index;
-            for (int i = 0; i < t.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = this->m_pData.get()[index]*t.m_pData.get()[index]; 
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+    template<typename U>
+    Tensor<U> Tensor<U>::mul (const Tensor<U>& t){
+        Tensor<U> res(t,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&t);
+        typename Tensor<U>::_Const_Iterator it_rhs(this);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            *it_res = *it_lhs * *it_rhs;
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
 
         return res;
     }
-        template <typename U>
-        Tensor<U> mul(const Tensor<U>& t1, const Tensor<U>& t2){
-        Tensor<U> res = t1;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
 
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = t1.m_start_index;
-            for (int i = 0; i < t1.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = t1.m_pData.get()[index] * t2.m_pData.get()[index];
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+    template <typename U>
+    Tensor<U> mul(const Tensor<U>& t1, const Tensor<U>& t2){
+        Tensor<U> res(t1,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&t1);
+        typename Tensor<U>::_Const_Iterator it_rhs(&t2);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            *it_res = *it_lhs * *it_rhs;
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
+        
 
-        return res;            
-        }
+        return res;
+    }
 
-        template<typename U>
-        Tensor<U> Tensor<U>::div(const Tensor<U>& t){
-        Tensor<U> res = t;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
 
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = t.m_start_index;
-            for (int i = 0; i < t.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = this->m_pData.get()[index]/t.m_pData.get()[index]; 
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+    template<typename U>
+    Tensor<U> Tensor<U>::div (const Tensor<U>& t){
+        Tensor<U> res(t,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&t);
+        typename Tensor<U>::_Const_Iterator it_rhs(this);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            *it_res = *it_lhs / *it_rhs;
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
 
         return res;
     }
-        template <typename U>
-        Tensor<U> div(const Tensor<U>& t1, const Tensor<U>& t2){
-        Tensor<U> res = t1;
-        std::vector<int> indices(res.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(res.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
 
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < res.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = t1.m_start_index;
-            for (int i = 0; i < t1.m_nDim; ++i) {
-                index += indices[i] * res.m_strides[i];
-            }
-            
-            res.m_pData.get()[index] = t1.m_pData.get()[index] - t2.m_pData.get()[index];
-
-            // 更新索引并检查是否完成
-            for (int dim = res.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < res.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
-            }
+    template <typename U>
+    Tensor<U> div(const Tensor<U>& t1, const Tensor<U>& t2){
+        Tensor<U> res(t1,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&t1);
+        typename Tensor<U>::_Const_Iterator it_rhs(&t2);
+        typename Tensor<U>::_Iterator it_res(&res);
+        while(!it_lhs.done()){
+            *it_res = *it_lhs / *it_rhs;
+            it_lhs++;
+            it_rhs++;
+            it_res++;
         }
+        
 
         return res;
-        }
+    }
+
 
   
 
