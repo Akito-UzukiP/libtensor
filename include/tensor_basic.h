@@ -55,12 +55,18 @@ namespace ts {
 
             // 重载运算符
             T& operator()(std::initializer_list<int> indices);  // 返回指定索引的元素
+            T& operator()(int* indices);  // 返回指定索引的元素，须保证indices的长度与m_nDim相同，否则会出现未定义行为
+            T& operator()(std::vector<int> indices);
+            T& operator()(int i , int j, int k); // 返回指定索引的元素，须保证m_nDim为3，否则会出现未定义行为
+            T& operator()(int i , int j); // 返回指定索引的元素，须保证m_nDim为2，否则会出现未定义行为
             Tensor<T> operator()(int dim_index);  // 返回指定维度(n-1维)
             Tensor<T> operator()(int dim_index, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
             Tensor<T> operator()(std::initializer_list<int> dim_target, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
 
             // View操作
-            Tensor<T> view(const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            Tensor<T> view(const std::initializer_list<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            Tensor<T> view(const std::vector<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            Tensor<T> view(const int* dims, const int nDim) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
             template <typename U>
             friend Tensor<U> view(const Tensor<U> org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
 
@@ -444,7 +450,7 @@ namespace ts {
     }
 
     template <typename T>
-    Tensor<T> arange(const int start, const int end, const int stride){
+    Tensor<T> arange(const int start, const int end, const int stride = 1){
         int total_size = (end-start)/stride;
         int* dim = new int[1]{total_size};
         T* data = new T[total_size];
@@ -460,11 +466,49 @@ namespace ts {
     template <typename T>
     T& Tensor<T>::operator()(std::initializer_list<int> indices){
         int index = m_start_index;
-        int multiplier = 1;
-        for (int i = m_nDim - 1; i >= 0; --i) {
-            index += *(indices.begin()+i) * multiplier;
-            multiplier *= m_dims[i];
+        for(int i = 0;i<m_nDim;i++){
+            index += *(indices.begin()+i)*m_strides[i];
         }
+    }
+
+    template <typename T>
+    T& Tensor<T>::operator()(int* indices){
+        int index = m_start_index;
+        for(int i = 0;i<m_nDim;i++){
+            index += *(indices+i)*m_strides[i];
+        }
+        return m_pData.get()[index];
+    }
+
+    template <typename T>
+    T& Tensor<T>::operator()(std::vector<int> indices){
+        int index = m_start_index;
+        for(int i = 0;i<m_nDim;i++){
+            index += indices[i]*m_strides[i];
+        }
+        return m_pData.get()[index];
+    }
+
+    template <typename T>
+    T& Tensor<T>::operator()(int i, int j, int k){
+        if(m_nDim != 3){
+            throw std::invalid_argument("Dimensions of lhs must be 3.");
+        }
+        int index = m_start_index;
+        index += i*m_strides[0];
+        index += j*m_strides[1];
+        index += k*m_strides[2];
+        return m_pData.get()[index];
+    }
+
+    template <typename T>
+    T& Tensor<T>::operator()(int i, int j){
+        if(m_nDim != 2){
+            throw std::invalid_argument("Dimensions of lhs must be 2.");
+        }
+        int index = m_start_index;
+        index += i*m_strides[0];
+        index += j*m_strides[1];
         return m_pData.get()[index];
     }
     

@@ -5,13 +5,13 @@
 namespace ts{
         // View操作群
     template <typename T>
-    Tensor<T> Tensor<T>::view(const std::initializer_list<int>& dims){
+    Tensor<T> Tensor<T>::view(const std::initializer_list<int>& dims) const{
         int total_size = 1;
         for(int i:dims){
             total_size *= i;
         }
         if(total_size != this->m_total_size){
-            throw "View操作的目标维度大小与原张量不匹配";
+            throw std::invalid_argument("View操作的目标维度大小与原张量不匹配");
         }
         Tensor<T> t = *this;
         t.m_nDim = dims.size();
@@ -29,6 +29,35 @@ namespace ts{
         }
         return t;
     }
+
+    template <typename T>
+    Tensor<T> Tensor<T>::view(const int* dims, const int nDim) const{
+        int total_size = 1;
+        for(int i = 0;i<nDim;i++){
+            total_size *= dims[i];
+        }
+        if(total_size != this->m_total_size){
+            throw std::invalid_argument("View操作的目标维度大小与原张量不匹配");
+        }
+        Tensor<T> t = *this;
+        t.m_nDim = nDim;
+        t.m_dims = new int[t.m_nDim];
+        t.m_strides = new int[t.m_nDim];
+        for(int i = 0;i<nDim;i++){
+            t.m_dims[i] = dims[i];
+        }
+        for(int i = nDim-1;i>=0;i--){
+            if(i == nDim-1){
+                t.m_strides[i] = 1;
+            }else{
+                t.m_strides[i] = t.m_strides[i+1]*t.m_dims[i+1];
+            }
+        }
+        return t;
+    }
+
+
+
     template <typename U>
     Tensor<U> view(const Tensor<U> org, const std::initializer_list<int>& dims){
         int total_size = 1;
