@@ -193,6 +193,13 @@ public:
         return !done();
     }
 
+    void reset(){
+        _index = 0;
+        std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
+        _done = false;
+        std::fill(_dim_order_entered, _dim_order_entered + m_pTensor->m_nDim, true);
+    }
+
 
 
 };
@@ -381,7 +388,13 @@ public:
     bool hasNext(){
         return !done();
     }
-
+    
+    void reset(){
+        _index = 0;
+        std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
+        _done = false;
+        std::fill(_dim_order_entered, _dim_order_entered + m_pTensor->m_nDim, true);
+    }
 
 };
 }

@@ -69,28 +69,49 @@ namespace ts {
             Tensor<T> view(const std::vector<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
             Tensor<T> view(const int* dims, const int nDim) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
             template <typename U>
-            friend Tensor<U> view(const Tensor<U> org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            friend Tensor<U> view(const Tensor<U>& org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
 
             // Transpose操作
             Tensor<T> transpose(const int dim1, const int dim2); // 返回一个新的张量，该张量与原张量共享数据，但stride和dims被交换
             template <typename U>
-            friend Tensor<U> transpose(const Tensor<U> org, const int dim1, const int dim2); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            friend Tensor<U> transpose(const Tensor<U>& org, const int dim1, const int dim2); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
             
             // Permute操作
             Tensor<T> permute(const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但维度顺序不同
             template <typename U>
-            friend Tensor<U> permute(const Tensor<U> org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但维度顺序不同
+            friend Tensor<U> permute(const Tensor<U>& org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但维度顺序不同
             // Slice操作
             // TODO 在上面的operator()中实现
 
             // Concat操作
             // TODO
             template <typename U>
-            friend Tensor<U> concat(const Tensor<U> t1, const Tensor<U> t2, const int axis); // 返回一个新的张量，且是t1和t2在axis维度上的拼接，并且新创建内存空间
+            friend Tensor<U> concat(const Tensor<U>& t1, const Tensor<U>& t2, const int axis); // 返回一个新的张量，且是t1和t2在axis维度上的拼接，并且新创建内存空间
+
+            // tile操作
+            template <typename U>
+            friend Tensor<U> repeat_along_axis(const Tensor<U>& org,const int axis,const int count);
+
+            template <typename U>
+            friend Tensor<U> tile(const Tensor<U>& org, const std::initializer_list<int>& counts); 
+            template <typename U>
+            friend Tensor<U> tile(const Tensor<U>& org, const int* dims, const int nDim);
+
+
 
             // Mutate操作
             // TODO
             Tensor<T>& operator=(std::initializer_list<T> l); // 用列表中的元素替换张量中的元素
+
+
+            // Squeeze和Unsqueeze操作
+            Tensor<T> squeeze(const int dim) const; // 返回一个新的张量，该张量与原张量共享数据，但在dim维度上的大小为1的维度被删除
+            template <typename U>
+            friend Tensor<U> squeeze(const Tensor<U>& org, const int dim); // 返回一个新的张量，该张量与原张量共享数据，但在dim维度上的大小为1的维度被删除
+
+            Tensor<T> unsqueeze(const int dim) const; // 返回一个新的张量，该张量与原张量共享数据，但在dim维度上增加一个大小为1的维度
+            template <typename U>
+            friend Tensor<U> unsqueeze(const Tensor<U>& org, const int dim); // 返回一个新的张量，该张量与原张量共享数据，但在dim维度上增加一个大小为1的维度
 
 
             template <typename U>
@@ -142,29 +163,29 @@ namespace ts {
             // Tensor<T> norm(const int dim, const int p, const int keepdim); // 按照指定维度求p范数，keepdim表示是否保持维度
 
             //比较，有: gt ge lt le eq ne
-            Tensor<T> gt(const Tensor<T>& t); // 大于
+            Tensor<bool> gt(const Tensor<T>& t); // 大于
             template <typename U>
-            friend Tensor<U> gt(const Tensor<U>& t1, const Tensor<U>& t2); // 大于
+            friend Tensor<bool> gt(const Tensor<U>& t1, const Tensor<U>& t2); // 大于
             Tensor<bool> operator>(const Tensor<T>& t); // 等于
-            Tensor<T> ge(const Tensor<T>& t); // 大于等于
+            Tensor<bool> ge(const Tensor<T>& t); // 大于等于
             template <typename U>
-            friend Tensor<U> ge(const Tensor<U>& t1, const Tensor<U>& t2); // 大于等于
+            friend Tensor<bool> ge(const Tensor<U>& t1, const Tensor<U>& t2); // 大于等于
             Tensor<bool> operator>=(const Tensor<T>& t); // 等于
-            Tensor<T> lt(const Tensor<T>& t); // 小于
+            Tensor<bool> lt(const Tensor<T>& t); // 小于
             template <typename U>
-            friend Tensor<U> lt(const Tensor<U>& t1, const Tensor<U>& t2); // 小于
+            friend Tensor<bool> lt(const Tensor<U>& t1, const Tensor<U>& t2); // 小于
             Tensor<bool> operator<(const Tensor<T>& t); // 等于
-            Tensor<T> le(const Tensor<T>& t); // 小于等于
+            Tensor<bool> le(const Tensor<T>& t); // 小于等于
             template <typename U>
-            friend Tensor<U> le(const Tensor<U>& t1, const Tensor<U>& t2); // 小于等于
+            friend Tensor<bool> le(const Tensor<U>& t1, const Tensor<U>& t2); // 小于等于
             Tensor<bool> operator<=(const Tensor<T>& t); // 等于
-            Tensor<T> eq(const Tensor<T>& t); // 等于
+            Tensor<bool> eq(const Tensor<T>& t); // 等于
             template <typename U>
-            friend Tensor<U> eq(const Tensor<U>& t1, const Tensor<U>& t2); // 等于
+            friend Tensor<bool> eq(const Tensor<U>& t1, const Tensor<U>& t2); // 等于
             Tensor<bool> operator==(const Tensor<T>& t); // 等于
-            Tensor<T> ne(const Tensor<T>& t); // 不等于
+            Tensor<bool> ne(const Tensor<T>& t); // 不等于
             template <typename U>
-            friend Tensor<U> ne(const Tensor<U>& t1, const Tensor<U>& t2); // 不等于
+            friend Tensor<bool> ne(const Tensor<U>& t1, const Tensor<U>& t2); // 不等于
             Tensor<bool> operator!=(const Tensor<T>& t); // 不等于
 
             class _Iterator;

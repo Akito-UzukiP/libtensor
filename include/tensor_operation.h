@@ -1,6 +1,7 @@
 #ifndef TENSOR_OPERATION_H
 #define TENSOR_OPERATION_H
 #include "tensor_basic.h"
+#include "iterator.h"
 
 namespace ts{
         // View操作群
@@ -59,7 +60,7 @@ namespace ts{
 
 
     template <typename U>
-    Tensor<U> view(const Tensor<U> org, const std::initializer_list<int>& dims){
+    Tensor<U> view(const Tensor<U>& org, const std::initializer_list<int>& dims){
         int total_size = 1;
         for(int i : dims){
             total_size *= i;
@@ -97,7 +98,7 @@ namespace ts{
     }
 
     template <typename U>
-    Tensor<U> transpose(const Tensor<U> org, const int dim1, const int dim2) {
+    Tensor<U> transpose(const Tensor<U>& org, const int dim1, const int dim2) {
         if (dim1 >= org.m_nDim || dim2 >= org.m_nDim || dim1 < 0 || dim2 < 0) {
             throw std::invalid_argument("Transpose操作的维度超出张量维度");
         }
@@ -139,7 +140,7 @@ namespace ts{
     }
 
     template <typename U>
-    Tensor<U> permute(const Tensor<U> org,const std::initializer_list<int> &dims){
+    Tensor<U> permute(const Tensor<U>& org,const std::initializer_list<int> &dims){
         if (dims.size() != org.m_nDim) {
             throw std::invalid_argument("Permute操作的维度数量与张量维度数量不匹配");
         }
@@ -250,14 +251,14 @@ namespace ts{
     }
 
     template <typename U>
-    Tensor<U> concat(const Tensor<U> t1, const Tensor<U> t2, const int axis){
+    Tensor<U> concat(const Tensor<U>& t1, const Tensor<U>& t2, const int axis){
         /*
             思路：先做完合法性检查
                 构建一个新的张量，然后把t1和t2的数据按照axis的位置拼接到新的张量上
         
         */
         if(t1.m_nDim != t2.m_nDim){
-            throw std::invalid_argument("Concat操作的两个张量维度不匹配");
+            throw std::invalid_argument("Concat操作的两个张量维度数量不匹配");
         }
         if(axis >= t1.m_nDim || axis < 0){
             throw std::invalid_argument("Concat操作的维度超出张量维度");
@@ -270,94 +271,221 @@ namespace ts{
         int* dim = new int[t1.m_nDim];
         for(int i = 0;i<t1.m_nDim;i++){
             dim[i] = t1.m_dims[i];
-        }
-        dim[axis] = t1.m_dims[axis] + t2.m_dims[axis];
-        std::vector<int> dims(t1.m_nDim);
-        for(int i = 0;i<t1.m_nDim;i++){
-            dims[i] = dim[i];
-        }
-        Tensor<U> t = Tensor<U>(t1.m_pData.get(),dim,t1.m_nDim);
-
-
-        // 把t1的数据赋值到t上
-        std::vector<int> indices(t1.m_nDim, 0);  // 用于存储当前索引的向量
-        std::vector<bool> dimensionEntered(t1.m_nDim, false); // 用于跟踪是否进入了一个新的维度
-        bool done = false;
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < t1.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
-
-            // 计算当前索引下的值
-            int index = t1.m_start_index;
-            for (int i = 0; i < t1.m_nDim; ++i) {
-                index += indices[i] * t1.m_strides[i];
-            }
-            int target_index = t.m_start_index;
-            for (int i = 0; i < t.m_nDim; ++i) {
-                target_index += indices[i] * t.m_strides[i];
-            }
-            t.m_pData.get()[target_index] =  t1.m_pData.get()[index];
-
-            // 更新索引并检查是否完成
-            for (int dim = t1.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < t1.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
+            if(i == axis){
+                dim[i] += t2.m_dims[i];
             }
         }
-        // 把t1的数据赋值到t上
-        std::fill(indices.begin(),indices.end(),0);
-        std::fill(dimensionEntered.begin(),dimensionEntered.end(),false);
-        done = false;
-        while (!done) {
-            // 遍历维度
-            for (int dim = 0; dim < t2.m_nDim; dim++) {
-                if (!dimensionEntered[dim]) {
-                    dimensionEntered[dim] = true;
-                }
-            }
+        Tensor<U> t = Tensor<U>(dim,t1.m_nDim);
 
-            // 计算当前索引下的值
-            int index = t2.m_start_index;
-            for (int i = 0; i < t2.m_nDim; ++i) {
-                index += indices[i] * t2.m_strides[i];
-            }
-            int target_index = t.m_start_index;
-            for (int i = 0; i < t.m_nDim; ++i) {
-                if(i == axis){
-                    target_index += (indices[i] + t1.m_dims[i]) * t.m_strides[i];
-                }else{
-                    target_index += indices[i] * t.m_strides[i];
-                }
-            }
-            t.m_pData.get()[target_index] =  t2.m_pData.get()[index];
-
-            // 更新索引并检查是否完成
-            for (int dim = t2.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
-                if (indices[dim] < t2.m_dims[dim] - 1) { 
-                    indices[dim]++;
-                    std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
-                    break;
-                } else {
-                    if (dim == 0) done = true; // 如果最外层都到头了就结束
-                    indices[dim] = 0; // 如果没到头就把当前层的index置0，然后继续更新上一层
-                }
+        int* dim_order = new int[t1.m_nDim];
+        int i = 0;
+        for(int j = 0;j<t1.m_nDim;j++){
+            if(j != axis){
+                dim_order[i] = j;
+                i++;
             }
         }
-        delete[] dim;
+        dim_order[i] = axis;
 
+        typename Tensor<U>::_Const_Iterator it1(&t1, dim_order, t1.m_nDim);
+        typename Tensor<U>::_Const_Iterator it2(&t2, dim_order, t1.m_nDim);
+        typename Tensor<U>::_Iterator it(&t, dim_order, t1.m_nDim);
+        int index_of_target_axis = 0;
+        while(it.hasNext()){
+            if(index_of_target_axis < t1.m_dims[axis]){
+                *it = *it1;
+                ++it1;
+            }else{
+                *it = *it2;
+                ++it2;
+            }
+            ++it;
+            ++index_of_target_axis;
+            if(index_of_target_axis == t.m_dims[axis]){
+                index_of_target_axis = 0;
+            }
+        }
         return t;
+    }
+
+
+    template <typename T>
+    Tensor<T> Tensor<T>::squeeze(const int dim) const{
+
+        if(dim >= m_nDim || dim < 0){
+            throw std::invalid_argument("Squeeze操作的维度超出张量维度");
+        }
+        if(m_dims[dim] != 1){
+            throw std::invalid_argument("Squeeze操作的维度不为1");
+        }
+        Tensor<T> squeezed_view(*this);
+        // 变化：m_dims少一个，m_nDim减一，m_strides少一个（其余strides不变）
+        squeezed_view.m_nDim -= 1;
+        int* temp_m_Dims = new int[squeezed_view.m_nDim];
+        int* temp_m_Strides = new int[squeezed_view.m_nDim];
+        int j = 0;
+        for(int i = 0;i<m_nDim;i++){
+            if(i != dim){
+                temp_m_Dims[j] = m_dims[i];
+                temp_m_Strides[j] = m_strides[i];
+                j++;
+            }
+        }
+        delete[] squeezed_view.m_dims;
+        delete[] squeezed_view.m_strides;
+        squeezed_view.m_dims = temp_m_Dims;
+        squeezed_view.m_strides = temp_m_Strides;
+        return squeezed_view;
+    }
+    template <typename U>
+    Tensor<U> squeeze(const Tensor<U>& org, const int dim){
+
+        if(dim >= org.m_nDim || dim < 0){
+            throw std::invalid_argument("Squeeze操作的维度超出张量维度");
+        }
+        if(org.m_dims[dim] != 1){
+            throw std::invalid_argument("Squeeze操作的维度不为1");
+        }
+        Tensor<U> squeezed_view(org,true);
+        // 变化：m_dims少一个，m_nDim减一，m_strides少一个（其余strides不变）
+        squeezed_view.m_nDim -= 1;
+        int* temp_m_Dims = new int[squeezed_view.m_nDim];
+        int* temp_m_Strides = new int[squeezed_view.m_nDim];
+        int j = 0;
+        for(int i = 0;i<org.m_nDim;i++){
+            if(i != dim){
+                temp_m_Dims[j] = org.m_dims[i];
+                temp_m_Strides[j] = org.m_strides[i];
+                j++;
+            }
+        }
+        delete[] squeezed_view.m_dims;
+        delete[] squeezed_view.m_strides;
+        squeezed_view.m_dims = temp_m_Dims;
+        squeezed_view.m_strides = temp_m_Strides;
+        return squeezed_view;
+    }
+
+    // Unsqueeze操作
+    template <typename T>
+    Tensor<T> Tensor<T>::unsqueeze(const int dim) const{
+
+        if(dim > m_nDim || dim < 0){
+            throw std::invalid_argument("Unsqueeze操作的维度超出张量维度");
+        }
+        Tensor<T> unsqueezed_view(*this);
+        // 变化：m_dims多一个，m_nDim加一，m_strides多一个（其余strides不变）
+        unsqueezed_view.m_nDim += 1;
+        int* temp_m_Dims = new int[unsqueezed_view.m_nDim];
+        int* temp_m_Strides = new int[unsqueezed_view.m_nDim];
+        int j = 0;
+        for(int i = 0;i<unsqueezed_view.m_nDim;i++){
+            if(i != dim){
+                temp_m_Dims[i] = m_dims[j];
+                temp_m_Strides[i] = m_strides[j];
+                j++;
+            }else{
+                temp_m_Dims[i] = 1;
+                temp_m_Strides[i] = 0;
+            }
+        }
+        delete[] unsqueezed_view.m_dims;
+        delete[] unsqueezed_view.m_strides;
+        unsqueezed_view.m_dims = temp_m_Dims;
+        unsqueezed_view.m_strides = temp_m_Strides;
+        return unsqueezed_view;
+    }
+    template <typename U>
+    Tensor<U> unsqueeze(const Tensor<U>& org, const int dim){
+        if(dim > org.m_nDim || dim < 0){
+            throw std::invalid_argument("Unsqueeze操作的维度超出张量维度");
+        }
+        Tensor<U> unsqueezed_view(org,true);
+        // 变化：m_dims多一个，m_nDim加一，m_strides多一个（其余strides不变）
+        unsqueezed_view.m_nDim += 1;
+        int* temp_m_Dims = new int[unsqueezed_view.m_nDim];
+        int* temp_m_Strides = new int[unsqueezed_view.m_nDim];
+        int j = 0;
+        for(int i = 0;i<unsqueezed_view.m_nDim;i++){
+            if(i != dim){
+                temp_m_Dims[i] = org.m_dims[j];
+                temp_m_Strides[i] = org.m_strides[j];
+                j++;
+            }else{
+                temp_m_Dims[i] = 1;
+                temp_m_Strides[i] = 0;
+            }
+        }
+        delete[] unsqueezed_view.m_dims;
+        delete[] unsqueezed_view.m_strides;
+        unsqueezed_view.m_dims = temp_m_Dims;
+        unsqueezed_view.m_strides = temp_m_Strides;
+        return unsqueezed_view;
+    }
+
+    template <typename U>
+    Tensor<U> repeat_along_axis(const Tensor<U>& org, const int axis, const int count){
+        if(axis >= org.m_nDim || axis < 0){
+            throw std::invalid_argument("Repeat操作的维度超出张量维度");
+        }
+        if(count <= 0){
+            throw std::invalid_argument("Repeat操作的重复次数小于等于0");
+        }
+
+        int *dim = new int[org.m_nDim];
+        for(int i = 0;i<org.m_nDim;i++){
+            dim[i] = org.m_dims[i];
+            if(i == axis){
+                dim[i] *= count;
+            }
+        }
+
+        Tensor<U> t = Tensor<U>(dim,org.m_nDim);
+
+        int* dim_order = new int[org.m_nDim];
+        int i = 1;
+        for(int j = 0;j<org.m_nDim;j++){
+            if(j != axis){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+        dim_order[0] = axis;
+        typename Tensor<U>::_Const_Iterator it1(&org, dim_order, org.m_nDim);
+        typename Tensor<U>::_Iterator it(&t, dim_order, org.m_nDim);
+        for(int i = 0;i<count;i++){
+            while(it1.hasNext()){
+                *it = *it1;
+                ++it;
+                ++it1;
+            }
+            it1.reset();
+        }
+        return t;
+    }
+
+    template <typename U>
+    Tensor<U> tile(const Tensor<U>& org, const std::initializer_list<int>& counts){
+        if(counts.size() > org.m_nDim+1 || counts.size() < org.m_nDim){
+            throw std::invalid_argument("Tile操作的维度数量与张量维度数量不匹配");
+        }
+        Tensor<U> temp;
+        if(counts.size() == org.m_nDim + 1){
+            temp = org.unsqueeze(0);
+        }else{
+            temp = org;
+        }
+
+        for(int i = 0;i<counts.size();i++){
+            if(*(counts.begin()+i) <= 0){
+                throw std::invalid_argument("Tile操作的重复次数小于等于0");
+            }
+            temp = repeat_along_axis(temp,i,*(counts.begin()+i));
+        }
+        return temp;
 
     }
+    
 }
 
 #endif

@@ -670,9 +670,5 @@ namespace ts{
         return res;
     }
 
-
-
-  
-
 }
 #endif
