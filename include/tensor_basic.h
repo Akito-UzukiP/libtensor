@@ -62,11 +62,11 @@ namespace ts {
             T& operator()(int i , int j); // 返回指定索引的元素，须保证m_nDim为2，否则会出现未定义行为
             Tensor<T> operator()(int dim_index);  // 返回指定维度(n-1维)
             Tensor<T> operator()(int dim_index, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
-            Tensor<T> operator()(std::initializer_list<int> dim_target, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
+          //  Tensor<T> operator()(std::initializer_list<int> dim_target, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
 
             // View操作
             Tensor<T> view(const std::initializer_list<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
-            Tensor<T> view(const std::vector<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            //Tensor<T> view(const std::vector<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
             Tensor<T> view(const int* dims, const int nDim) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
             template <typename U>
             friend Tensor<U> view(const Tensor<U>& org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
@@ -95,7 +95,7 @@ namespace ts {
             template <typename U>
             friend Tensor<U> tile(const Tensor<U>& org, const std::initializer_list<int>& counts); 
             template <typename U>
-            friend Tensor<U> tile(const Tensor<U>& org, const int* dims, const int nDim);
+            friend Tensor<U> tile(const Tensor<U>& org, const int* counts, const int nCount);
 
 
 

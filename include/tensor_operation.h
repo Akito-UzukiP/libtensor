@@ -485,6 +485,26 @@ namespace ts{
         return temp;
 
     }
+    template <typename U>
+    Tensor<U> tile(const Tensor<U>& org, const int* counts, const int nCount){
+        if(nCount > org.m_nDim+1 || nCount < org.m_nDim){
+            throw std::invalid_argument("Tile操作的维度数量与张量维度数量不匹配");
+        }
+        Tensor<U> temp;
+        if(nCount == org.m_nDim + 1){
+            temp = org.unsqueeze(0);
+        }else{
+            temp = org;
+        }
+
+        for(int i = 0;i<nCount;i++){
+            if(counts[i] <= 0){
+                throw std::invalid_argument("Tile操作的重复次数小于等于0");
+            }
+            temp = repeat_along_axis(temp,i,counts[i]);
+        }
+        return temp;
+    }
     
 }
 
