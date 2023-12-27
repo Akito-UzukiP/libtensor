@@ -40,11 +40,15 @@ void testMatrixOperations() {
 }
 
 int main() {
-    testConstructionAndAssignment();
-    testElementAccess();
-    testArithmeticOperations();
-    testMatrixOperations();
+    // testConstructionAndAssignment();
+    // testElementAccess();
+    // testArithmeticOperations();
+    // testMatrixOperations();
 
-    std::cout << "All tests passed!" << std::endl;
+    // std::cout << "All tests passed!" << std::endl;
+    ts::Tensor<int> a = ts::arange<int>(0, 60).view({3,4,5});
+    ts::Tensor<int> b = ts::arange<int>(0, 60).view({3,5,4});
+    ts::Tensor<int> c = ts::einsum<int>("ijk,ikl->ij", {a, b});
+    std::cout << c << std::endl;
     return 0;
 }

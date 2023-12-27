@@ -34,6 +34,7 @@ namespace ts {
         public:
             Tensor();  // Default constructor
             Tensor(const int* dims, const int nDim); // Constructor
+            Tensor(const std::vector<int>& dims); // Constructor
             Tensor(T* pData, const std::initializer_list<int>& dims); // Constructor
             Tensor(T* pData, const int* dims, const int nDim); // Hard Copy Constructor
             Tensor(const Tensor<T>& t, bool shallow_copy = true); // Shallow Copy constructor
@@ -41,6 +42,7 @@ namespace ts {
             ~Tensor(); // Destructor
             
             std::string size() const; // Return the size of each dimension
+            std::vector<int> shape() const; // Return the size of each dimension
             int total_size() const; // Return the total size of the tensor
             std::string type() const; // Return the type of the elements
             std::string stride() const; // Return the stride of each dimension
@@ -57,7 +59,7 @@ namespace ts {
             // 重载运算符
             T& operator()(std::initializer_list<int> indices);  // 返回指定索引的元素
             T& operator()(int* indices);  // 返回指定索引的元素，须保证indices的长度与m_nDim相同，否则会出现未定义行为
-            T& operator()(std::vector<int> indices);
+            T& operator()(std::vector<int> indices) const;
             T& operator()(int i , int j, int k); // 返回指定索引的元素，须保证m_nDim为3，否则会出现未定义行为
             T& operator()(int i , int j); // 返回指定索引的元素，须保证m_nDim为2，否则会出现未定义行为
             Tensor<T> operator()(int dim_index);  // 返回指定维度(n-1维)
@@ -224,6 +226,27 @@ namespace ts {
     }
 
     template <typename T>
+    Tensor<T>::Tensor(const std::vector<int>& dims){
+        m_nDim = dims.size();
+        m_total_size = 1;
+        m_dims = new int[m_nDim];
+        m_strides = new int[m_nDim];
+        m_start_index = 0;
+        for(int i = 0;i<dims.size();i++){
+            m_dims[i] = dims[i];
+            m_total_size *= m_dims[i];
+        }
+        for(int i = dims.size()-1;i>=0;i--){
+            if(i == dims.size()-1){
+                m_strides[i] = 1;
+            }else{
+                m_strides[i] = m_strides[i+1]*m_dims[i+1];
+            }
+        }
+        m_pData = std::shared_ptr<T[]>(new T[m_total_size]);
+    }
+
+    template <typename T>
     Tensor<T>::Tensor(T* pData, const std::initializer_list<int>& dims){
         m_nDim = dims.size();
         m_total_size = 1;
@@ -327,6 +350,15 @@ namespace ts {
             }
         }
         output += "]";
+        return output;
+    }
+
+    template <typename T>
+    std::vector<int> Tensor<T>::shape() const {
+        std::vector<int> output;
+        for(int i = 0;i<m_nDim;i++){
+            output.push_back(m_dims[i]);
+        }
         return output;
     }
 
@@ -455,6 +487,29 @@ namespace ts {
     }
 
     template <typename T>
+    Tensor<T> zeros(const std::vector<int> dims){
+        int total_size = 1;
+        int nDim = dims.size();
+        int* dim = new int[nDim];
+        for(int i = 0;i<nDim;i++){
+            dim[i] = dims[i];
+            total_size *= dim[i];
+        }
+        T* data = new T[total_size];
+        for(int i = 0;i<total_size;i++){
+            data[i] = 0;
+        }
+        int* dim2 = new int[nDim];
+        for(int i = 0;i<nDim;i++){
+            dim2[i] = dims[i];
+        }
+        Tensor<T> t = Tensor<T>(data,dim2,nDim);
+        delete[] data;
+        delete[] dim;
+        return t;
+    }
+
+    template <typename T>
     Tensor<T> ones(const std::initializer_list<int>& dims){
         int total_size = 1;
         int nDim = dims.size();
@@ -567,7 +622,7 @@ namespace ts {
     }
 
     template <typename T>
-    T& Tensor<T>::operator()(std::vector<int> indices){
+    T& Tensor<T>::operator()(std::vector<int> indices) const{
         int index = m_start_index;
         for(int i = 0;i<m_nDim;i++){
             index += indices[i]*m_strides[i];
