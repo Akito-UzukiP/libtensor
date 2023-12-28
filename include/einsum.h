@@ -67,20 +67,11 @@ namespace ts{
         Tensor<T> output = zeros<T>(output_shape);
 
 
-        //std::vector<bool> dim_entered(input_dims.size(), false);
         bool done = false;
         while(!done){
             // 创建一个用于存储当前索引的vector
             std::vector<T> index_for_each_input;
 
-            // 对每个输入Tensor计算索引
-            // for(const auto& input_dim : input_dims){
-            //     std::vector<int> indices;
-            //     for(char dim : input_dim){
-            //         indices.push_back(cur_index[dim]);
-            //     }
-            //     index_for_each_input.push_back(tensor(indices)); // 使用indices获取tensor的值
-            // }
             for(int i = 0; i < input_dims.size(); i++){
                 std::vector<int> indices;
                 for(char dim : input_dims[i]){

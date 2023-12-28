@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <type_traits>
+#include <typeinfo>
 #include <random>
 #include <memory>
 namespace ts {
@@ -19,17 +20,6 @@ namespace ts {
             int m_start_index; // Start index
             //T *m_pData; // Element array,看起来得重写一个data类，提供一些基本的操作，或者干脆就用智能指针接手
             std::shared_ptr<T[]> m_pData;
-
-            /*
-            * m_strides 数组用于存储张量每个维度上的步长信息。
-            * “步长”指的是，在沿着某一维度移动到下一个元素时，需要在内存中跨越的字节数。
-            * 例如，如果一个二维张量（矩阵）的类型为 int（假设每个 int 为 4 字节），
-            * 那么在行方向上的步长就是该行所有元素所占字节数总和。
-            * 这个信息对于快速定位多维张量中的元素非常重要，
-            * 特别是在进行如转置、切片等不改变数据排列但改变视图的操作时。
-            * 通过这种方式，我们可以有效地重用相同的数据缓冲区，而不必进行数据的实际复制，
-            * 这对于提高性能和减少内存使用非常有帮助。
-            */
 
             int* m_strides; // Strides,
 
@@ -100,8 +90,20 @@ namespace ts {
             friend Tensor<U> tile(const Tensor<U>& org, const std::initializer_list<int>& counts); 
             template <typename U>
             friend Tensor<U> tile(const Tensor<U>& org, const int* counts, const int nCount);
+            template <typename U>
+            friend Tensor<U> tile(const Tensor<U>& org, const std::vector<int>& counts);
 
-
+            // BroadCast操作
+            template <typename U>
+            friend std::vector<int> get_broadcast_shape(const std::vector<Tensor<U>>& tensors); // 计算两个张量的广播形状
+            template <typename U>
+            friend std::vector<int> get_broadcast_shape(const std::initializer_list<Tensor<U>>& tensors); // 计算两个张量的广播形状
+            template <typename U>
+            friend Tensor<U> broadcast(const Tensor<U>& org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            template <typename U>
+            friend Tensor<U> broadcast(const Tensor<U>& org, const int* dims, const int nDim); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            template <typename U>
+            friend Tensor<U> broadcast(const Tensor<U>& org, const std::vector<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
 
             // Mutate操作
             // TODO
@@ -160,12 +162,6 @@ namespace ts {
             Tensor<T> min(const int dim); // 按照指定维度求最小值
             template <typename U>
             friend Tensor<U> min(const Tensor<U>& t, const int dim); // 按照指定维度求最小值
-            // Tensor<T> argmax(const int dim); // 按照指定维度求最大值的索引
-            // Tensor<T> argmin(const int dim); // 按照指定维度求最小值的索引
-            // Tensor<T> norm(const int dim); // 按照指定维度求范数
-            // Tensor<T> norm(const int dim, const int p); // 按照指定维度求p范数  
-            // Tensor<T> norm(const int dim, const int p, const int keepdim); // 按照指定维度求p范数，keepdim表示是否保持维度
-
             //比较，有: gt ge lt le eq ne
             Tensor<bool> gt(const Tensor<T>& t); // 大于
             template <typename U>
@@ -452,6 +448,13 @@ namespace ts {
 
             if constexpr(std::is_integral<U>::value || std::is_floating_point<U>::value){
                 os << std::setw(max_length) << m.m_pData.get()[index];
+            }else if constexpr(typeid(U) == typeid(bool)){
+                if(m.m_pData.get()[index]){
+                    os << "True";
+                }else{
+                    os << "False";
+                }
+
             }else{
                 os << m.m_pData.get()[index];
             }

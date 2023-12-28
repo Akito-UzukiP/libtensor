@@ -8,14 +8,16 @@ namespace ts{
 
     template<typename U>
     Tensor<U> operator+(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        Tensor<U> res(lhs,false);
         bool done = false;
 
-        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
-        typename Tensor<U>::_Const_Iterator it_rhs(&rhs);
+        std::vector<int> broadcast_dims = get_broadcast_shape({lhs,rhs});
+        Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
+        Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
+        Tensor<U> res(lhs_,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&lhs_);
+        typename Tensor<U>::_Const_Iterator it_rhs(&rhs_);
         typename Tensor<U>::_Iterator it_res(&res);
         while(!it_lhs.done()){
-            std::cout<<*it_lhs<<std::endl;
             *it_res = *it_lhs + *it_rhs;
             it_lhs++;
             it_rhs++;
@@ -27,18 +29,14 @@ namespace ts{
     }
     template<typename U>
     Tensor<U> operator-(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        // 确保两个张量具有相同的维度和大小
-        if (lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims) {
-            throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
-        }
 
-        Tensor<U> res(lhs,false);
-
-        // 使用迭代器遍历 lhs 和 rhs
-        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
-        typename Tensor<U>::_Const_Iterator it_rhs(&rhs);
+        std::vector<int> broadcast_dims = get_broadcast_shape({lhs,rhs});
+        Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
+        Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
+        Tensor<U> res(lhs_,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&lhs_);
+        typename Tensor<U>::_Const_Iterator it_rhs(&rhs_);
         typename Tensor<U>::_Iterator it_res(&res);
-
         while (!it_res.done()) {
             // 通过迭代器直接访问并操作张量的元素
             *it_res = *it_lhs - *it_rhs;
@@ -54,16 +52,12 @@ namespace ts{
 
     template<typename U>
     Tensor<U> operator*(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        // 确保两个张量具有相同的维度和大小
-        if (lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims) {
-            throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
-        }
-
-        Tensor<U> res(lhs,false);
-
-        // 使用迭代器遍历 lhs 和 rhs
-        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
-        typename Tensor<U>::_Const_Iterator it_rhs(&rhs);
+        std::vector<int> broadcast_dims = get_broadcast_shape({lhs,rhs});
+        Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
+        Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
+        Tensor<U> res(lhs_,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&lhs_);
+        typename Tensor<U>::_Const_Iterator it_rhs(&rhs_);
         typename Tensor<U>::_Iterator it_res(&res);
 
         while (!it_res.done()) {
@@ -82,16 +76,12 @@ namespace ts{
 
     template<typename U>
     Tensor<U> operator/(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        // 确保两个张量具有相同的维度和大小
-        if (lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims) {
-            throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
-        }
-
-        Tensor<U> res(lhs,false);
-
-        // 使用迭代器遍历 lhs 和 rhs
-        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
-        typename Tensor<U>::_Const_Iterator it_rhs(&rhs);
+        std::vector<int> broadcast_dims = get_broadcast_shape({lhs,rhs});
+        Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
+        Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
+        Tensor<U> res(lhs_,false);
+        typename Tensor<U>::_Const_Iterator it_lhs(&lhs_);
+        typename Tensor<U>::_Const_Iterator it_rhs(&rhs_);
         typename Tensor<U>::_Iterator it_res(&res);
 
         while (!it_res.done()) {
@@ -123,138 +113,46 @@ namespace ts{
     }
 
 
-    template<typename U>
-    Tensor<U> Tensor<U>::add(const Tensor<U>& t){
-        Tensor<U> res(t,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&t);
-        typename Tensor<U>::_Const_Iterator it_rhs(this);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = *it_lhs + *it_rhs;
-            it_lhs++;
-            it_rhs++;
-            it_res++;
-        }
-
-        return res;
+    template<typename T>
+    Tensor<T> Tensor<T>::add(const Tensor<T>& t){
+        return *this + t;
     }
 
     template <typename U>
     Tensor<U> add(const Tensor<U>& t1, const Tensor<U>& t2){
-        Tensor<U> res(t1,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&t1);
-        typename Tensor<U>::_Const_Iterator it_rhs(&t2);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = *it_lhs + *it_rhs;
-            it_lhs++;
-            it_rhs++;
-            it_res++;
-        }
-        
-
-        return res;
+        return t1 + t2;
     }
 
-    template<typename U>
-    Tensor<U> Tensor<U>::sub(const Tensor<U>& t){
-        Tensor<U> res(t,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&t);
-        typename Tensor<U>::_Const_Iterator it_rhs(this);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = *it_lhs - *it_rhs;
-            it_lhs++;
-            it_rhs++;
-            it_res++;
-        }
-
-        return res;
+    template<typename T>
+    Tensor<T> Tensor<T>::sub(const Tensor<T>& t){
+        return *this - t;
     }
 
 
     template <typename U>
     Tensor<U> sub(const Tensor<U>& t1, const Tensor<U>& t2){
-        Tensor<U> res(t1,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&t1);
-        typename Tensor<U>::_Const_Iterator it_rhs(&t2);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = *it_lhs - *it_rhs;
-            it_lhs++;
-            it_rhs++;
-            it_res++;
-        }
-        
-
-        return res;
+        return t1 - t2;
     }
 
-    template<typename U>
-    Tensor<U> Tensor<U>::mul (const Tensor<U>& t){
-        Tensor<U> res(t,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&t);
-        typename Tensor<U>::_Const_Iterator it_rhs(this);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = *it_lhs * *it_rhs;
-            it_lhs++;
-            it_rhs++;
-            it_res++;
-        }
-
-        return res;
+    template<typename T>
+    Tensor<T> Tensor<T>::mul (const Tensor<T>& t){
+        return *this * t;
     }
 
     template <typename U>
     Tensor<U> mul(const Tensor<U>& t1, const Tensor<U>& t2){
-        Tensor<U> res(t1,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&t1);
-        typename Tensor<U>::_Const_Iterator it_rhs(&t2);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = *it_lhs * *it_rhs;
-            it_lhs++;
-            it_rhs++;
-            it_res++;
-        }
-        
-
-        return res;
+        return t1 * t2;
     }
 
 
-    template<typename U>
-    Tensor<U> Tensor<U>::div (const Tensor<U>& t){
-        Tensor<U> res(t,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&t);
-        typename Tensor<U>::_Const_Iterator it_rhs(this);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = *it_lhs / *it_rhs;
-            it_lhs++;
-            it_rhs++;
-            it_res++;
-        }
-
-        return res;
+    template<typename T>
+    Tensor<T> Tensor<T>::div (const Tensor<T>& t){
+        return *this / t;
     }
 
     template <typename U>
     Tensor<U> div(const Tensor<U>& t1, const Tensor<U>& t2){
-        Tensor<U> res(t1,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&t1);
-        typename Tensor<U>::_Const_Iterator it_rhs(&t2);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = *it_lhs / *it_rhs;
-            it_lhs++;
-            it_rhs++;
-            it_res++;
-        }
-        
-
-        return res;
+        return t1 / t2;
     }
 
 
@@ -310,33 +208,45 @@ namespace ts{
         if(lhs.m_nDim < 2 || rhs.m_nDim < 2){
             throw std::invalid_argument("Dimensions of lhs and rhs must be greater than 1.");
         }
-        for(int i = 0; i < lhs.m_nDim-2; i++){
-            if(lhs.m_dims[i] != rhs.m_dims[i]){
-                throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
-            }
-        }
+        // for(int i = 0; i < lhs.m_nDim-2; i++){
+        //     if(lhs.m_dims[i] != rhs.m_dims[i]){
+        //         throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        //     }
+        // }
         if(lhs.m_dims[lhs.m_nDim-1] != rhs.m_dims[rhs.m_nDim-2]){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
-        int m = lhs.m_dims[lhs.m_nDim-2];
-        int n = rhs.m_dims[rhs.m_nDim-1];
-        int k = lhs.m_dims[lhs.m_nDim-1];
-        int b = 1;
-        int* dims = new int[lhs.m_nDim];
-        int nDim = lhs.m_nDim;
-        for(int i = 0; i < lhs.m_nDim-2; i++){
-            dims[i] = lhs.m_dims[i];
-        }
-        dims[lhs.m_nDim-2] = m;
-        dims[lhs.m_nDim-1] = n;
 
-        if(lhs.m_nDim > 2){
-            for(int i = 0; i < lhs.m_nDim-2; i++){
-                b *= lhs.m_dims[i];
+        Tensor<U> lhs_ = transpose(lhs, lhs.m_nDim-2,lhs.m_nDim-1);
+        Tensor<U> rhs_ = rhs;
+        std::vector<int> broadcast_dims = get_broadcast_shape({lhs_,rhs_});
+        lhs_ = broadcast(lhs_, broadcast_dims);
+        rhs_ = broadcast(rhs_, broadcast_dims);
+        lhs_ = transpose(lhs_, lhs_.m_nDim-2,lhs_.m_nDim-1);
+       // rhs_ = transpose(rhs_, rhs_.m_nDim-2,rhs_.m_nDim-1);
+
+
+        int m = lhs_.m_dims[lhs_.m_nDim-2];
+        int n = rhs_.m_dims[rhs_.m_nDim-1];
+        int k = lhs_.m_dims[lhs_.m_nDim-1];
+        int b = 1;
+        int* dims = new int[lhs_.m_nDim];
+        int nDim = lhs_.m_nDim;
+        for(int i = 0; i < lhs_.m_nDim-2; i++){
+            dims[i] = lhs_.m_dims[i];
+        }
+        dims[lhs_.m_nDim-2] = m;
+        dims[lhs_.m_nDim-1] = n;
+
+        if(lhs_.m_nDim > 2){
+            for(int i = 0; i < lhs_.m_nDim-2; i++){
+                b *= lhs_.m_dims[i];
             }
         }
-        Tensor<U> lhs_ = lhs.view({b,m,k});
-        Tensor<U> rhs_ = rhs.view({b,k,n});
+        // std::cout<<b<<" "<<m<<" "<<k<<" "<<n<<std::endl;
+        // std::cout<< lhs_.size()<<" "<<rhs_.size()<<std::endl;
+        lhs_ = lhs_.view({b,m,k});
+        rhs_ = rhs_.view({b,k,n});
         Tensor<U> res = zeros<U>({b,m,n});
 
         for(int i = 0; i < b; i++){

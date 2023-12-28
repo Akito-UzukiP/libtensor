@@ -2,6 +2,7 @@
 #define TENSOR_COMPARISON_H
 #include "tensor.h"
 #include "iterator.h"
+#include <type_traits>
 namespace ts{
     // comparison gt ge lt le eq ne
 
@@ -21,6 +22,12 @@ namespace ts{
     bool equal(long double a, long double b){
         return std::abs(a-b) < 1e-12;
     }
+
+    template<typename T, typename U> // int and float
+    bool equal(T a, U b){
+        return std::abs(a-b) < 1e-6;
+    }
+
 
     template<typename T>
     Tensor<bool> Tensor<T>::gt(const Tensor<T>& t){

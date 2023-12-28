@@ -505,6 +505,89 @@ namespace ts{
         }
         return temp;
     }
+
+    template <typename U>
+    Tensor<U> tile(const Tensor<U>& org, const std::vector<int>& counts){
+        if(counts.size() > org.m_nDim+1 || counts.size() < org.m_nDim){
+            throw std::invalid_argument("Tile操作的维度数量与张量维度数量不匹配");
+        }
+        Tensor<U> temp;
+        if(counts.size() == org.m_nDim + 1){
+            temp = org.unsqueeze(0);
+        }else{
+            temp = org;
+        }
+
+        for(int i = 0;i<counts.size();i++){
+            if(counts[i] <= 0){
+                throw std::invalid_argument("Tile操作的重复次数小于等于0");
+            }
+            temp = repeat_along_axis(temp,i,counts[i]);
+        }
+        return temp;
+    }
+
+
+    template <typename U>
+    std::vector<int> get_broadcast_shape(const std::vector<Tensor<U>>& tensors){
+        std::vector<int> max_shape;
+
+        // Find the shape with the maximum number of dimensions
+        for (const auto& tensor : tensors) {
+            if (tensor.shape().size() > max_shape.size()) {
+                max_shape = tensor.shape();
+            }
+        }
+
+        // Compare each tensor's shape with the max shape from the end
+        for (const auto& tensor : tensors) {
+            std::vector<int> shape = tensor.shape();
+            int diff = max_shape.size() - shape.size();
+
+            for (int i = max_shape.size() - 1; i >= 0; --i) {
+                int dim = i - diff;
+                if (dim >= 0) {
+                    if (shape[dim] > max_shape[i]) {
+                        max_shape[i] = shape[dim];
+                    } else if (shape[dim] != 1 && shape[dim] != max_shape[i]) {
+                        throw std::invalid_argument("Broadcast操作的张量维度不匹配");
+                    }
+                }
+                // Else, this dimension is implicitly 1 for the current tensor
+            }
+        }
+
+        return max_shape;
+    }
+
+    template <typename U>
+    std::vector<int> get_broadcast_shape(const std::initializer_list<Tensor<U>>& tensors){
+        std::vector<Tensor<U>> temp_tensors = tensors;
+        return get_broadcast_shape(temp_tensors);
+    }
+
+
+    template <typename U>
+    Tensor<U> broadcast(const Tensor<U>& org, const std::vector<int>& shape){
+        Tensor<U> temp = org;
+        if(org.shape() == shape){
+            return temp;
+        }
+        while(temp.shape().size() < shape.size()){
+            temp = temp.unsqueeze(0);
+        }
+        for(int i = 0;i<shape.size();i++){
+            if(shape[i] != temp.shape()[i]){
+                temp = repeat_along_axis(temp,i,shape[i]);
+            }
+        }
+        return temp;
+    }
+    template <typename U>
+    Tensor<U> broadcast(const Tensor<U>& org, const std::initializer_list<int>& shape){
+        std::vector<int> temp_shape = shape;
+        return broadcast(org,temp_shape);
+    }
     
 }
 
