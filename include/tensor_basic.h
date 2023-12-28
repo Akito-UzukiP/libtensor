@@ -307,7 +307,9 @@ namespace ts {
             m_pData = other.m_pData;
         }else{
             m_pData = std::shared_ptr<T[]>(new T[m_total_size]);
-            
+            for(int i = 0;i<m_total_size;i++){
+                m_pData.get()[i] = other.m_pData.get()[i];
+            }
         }
     }
 
@@ -591,6 +593,32 @@ namespace ts {
         delete[] dim;
         return t;
 
+    }
+
+    template <typename T>
+    Tensor<T> rand(const std::vector<int>& dims){
+        int total_size = 1;
+        int nDim = dims.size();
+        int* dim = new int[nDim];
+        for(int i = 0;i<nDim;i++){
+            dim[i] = *(dims.begin()+i);
+            total_size *= dim[i];
+        }
+        T* data = new T[total_size];
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<> dis(0, 10);
+        for(int i = 0;i<total_size;i++){
+            data[i] = dis(gen);
+        }
+        int* dim2 = new int[nDim];
+        for(int i = 0;i<nDim;i++){
+            dim2[i] = dims[i];
+        }
+        Tensor<T> t = Tensor<T>(data,dim2,nDim);
+        delete[] data;
+        delete[] dim;
+        return t;        
     }
 
     template <typename T>

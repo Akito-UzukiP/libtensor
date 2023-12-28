@@ -21,5 +21,7 @@ file(GLOB SOURCES "src/*.cpp")
 # Add executable based on the source files
 add_executable(libtensor ${SOURCES})
 
+# target_compile_options(libtensor PRIVATE -mavx -mavx2)
+
 # If you have any libraries to link (e.g., if you have some libs in a 'lib' directory)
 # target_link_libraries(YourExecutableName ${PROJECT_SOURCE_DIR}/lib/your_lib.a)

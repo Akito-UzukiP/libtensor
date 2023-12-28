@@ -9,6 +9,7 @@ class Tensor<T>::_Iterator {
 private:
     Tensor<T>* m_pTensor; // 指向张量的指针
     int _index; // 当前索引
+    int _real_index;
     int* _indices; // 用于存储当前索引的向量，顺序与标准顺序不同，与_dim_order配套使用，在*运算符中重新排序为实际索引
     bool _done; // 是否完成
     int* _dim_order; // 维度顺序，用于计算索引，例如:[0,2,3,1]，就是先遍历第0维，然后第2维，第3维，第1维
@@ -18,6 +19,7 @@ public:
     _Iterator(){
         m_pTensor = nullptr;
         _index = 0;
+        _real_index = 0;
         _indices = nullptr;
         _done = true;
         _dim_order = nullptr;
@@ -29,6 +31,7 @@ public:
     _Iterator(Tensor<T>* pTensor, int* dim_order, int dim_order_size) {
         m_pTensor = pTensor;
         _index = 0;
+        _real_index = 0;
         _indices = new int[m_pTensor->m_nDim];
         std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
         _done = false;
@@ -42,6 +45,21 @@ public:
     _Iterator(Tensor<T>* pTensor){
         m_pTensor = pTensor;
         _index = 0;
+        _real_index = 0;
+        _indices = new int[m_pTensor->m_nDim];
+        std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
+        _done = false;
+        _dim_order = new int[m_pTensor->m_nDim];
+        _dim_order_size = m_pTensor->m_nDim;
+        _dim_order_entered = new bool[m_pTensor->m_nDim];
+        for(int i = 0;i<m_pTensor->m_nDim;i++){
+            _dim_order[i] = i;
+        }
+    }
+    _Iterator(Tensor<T>& pTensor){
+        m_pTensor = &pTensor;
+        _index = 0;
+        _real_index = 0;
         _indices = new int[m_pTensor->m_nDim];
         std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
         _done = false;
@@ -55,6 +73,7 @@ public:
     _Iterator(Tensor<T>* pTensor, std::initializer_list<int> dim_order){
         m_pTensor = pTensor;
         _index = 0;
+        _real_index = 0;
         _indices = new int[m_pTensor->m_nDim];
         std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
         _done = false;
@@ -69,6 +88,7 @@ public:
     _Iterator(Tensor<T>* pTensor, std::vector<int> dim_order){
         m_pTensor = pTensor;
         _index = 0;
+        _real_index = 0;
         _indices = new int[m_pTensor->m_nDim];
         std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
         _done = false;
@@ -83,6 +103,7 @@ public:
     _Iterator(const _Iterator& other){
         m_pTensor = other.m_pTensor;
         _index = other._index;
+        _real_index = other._real_index;
 
         _indices = new int[m_pTensor->m_nDim];
         for(int i = 0;i<m_pTensor->m_nDim;i++){
@@ -104,6 +125,7 @@ public:
             return *this;
         }
         m_pTensor = other.m_pTensor;
+        _real_index = other._real_index;
         _index = other._index;
         if(_indices != nullptr){
             delete[] _indices;
@@ -141,19 +163,19 @@ public:
         return !(operator==(other));
     }
 
-    _Iterator& operator++(){
+    inline _Iterator& operator++(){
         _index++;
         // 按照_dim_order更新索引
-        std::fill(_dim_order_entered, _dim_order_entered + m_pTensor->m_nDim, true);
         for(int dim = m_pTensor->m_nDim-1;dim>=0;dim--){
             if(_indices[dim] < m_pTensor->m_dims[_dim_order[dim]]-1){ // _indices的顺序与_dim_order相同，与标准顺序不同
                 _indices[dim]++;
-                std::fill(_dim_order_entered+dim+1,_dim_order_entered+m_pTensor->m_nDim,false);
+                _real_index += m_pTensor->m_strides[_dim_order[dim]];
                 break;
             }else{
                 if(dim == 0){
                     _done = true;
                 }
+                _real_index -= m_pTensor->m_strides[_dim_order[dim]]*(_indices[dim]);
                 _indices[dim] = 0;
             }
         }
@@ -173,16 +195,19 @@ public:
         return tmp;
     }
 
+    _Iterator operator+=(int n){
+        for(int i = 0;i<n;i++){
+            ++(*this);
+        }
+        return *this;
+    }
+
 
 
 
 
     T& operator*(){
-        int index = m_pTensor->m_start_index;
-        for(int i = 0;i<m_pTensor->m_nDim;i++){
-            index += _indices[i]*m_pTensor->m_strides[_dim_order[i]];
-        }
-        return m_pTensor->m_pData.get()[index];
+        return m_pTensor->m_pData.get()[_real_index];
     }
 
     bool done(){
@@ -207,12 +232,12 @@ public:
 
 
 
-// _Const_Iterator 类的定义
 template <typename T>
 class Tensor<T>::_Const_Iterator {
 private:
     const Tensor<T>* m_pTensor; // 指向张量的指针
     int _index; // 当前索引
+    int _real_index;
     int* _indices; // 用于存储当前索引的向量，顺序与标准顺序不同，与_dim_order配套使用，在*运算符中重新排序为实际索引
     bool _done; // 是否完成
     int* _dim_order; // 维度顺序，用于计算索引，例如:[0,2,3,1]，就是先遍历第0维，然后第2维，第3维，第1维
@@ -222,23 +247,24 @@ public:
     _Const_Iterator(){
         m_pTensor = nullptr;
         _index = 0;
+        _real_index = 0;
         _indices = nullptr;
         _done = true;
         _dim_order = nullptr;
         _dim_order_size = 0;
         _dim_order_entered = nullptr;
     }
+
+
     _Const_Iterator(const Tensor<T>* pTensor, int* dim_order, int dim_order_size) {
         m_pTensor = pTensor;
         _index = 0;
-
+        _real_index = 0;
         _indices = new int[m_pTensor->m_nDim];
         std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
         _done = false;
-
         _dim_order = new int[dim_order_size];
         _dim_order_size = dim_order_size;
-
         _dim_order_entered = new bool[dim_order_size];
         for(int i = 0;i<dim_order_size;i++){
             _dim_order[i] = *(dim_order+i);
@@ -247,14 +273,26 @@ public:
     _Const_Iterator(const Tensor<T>* pTensor){
         m_pTensor = pTensor;
         _index = 0;
-
+        _real_index = 0;
         _indices = new int[m_pTensor->m_nDim];
         std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
         _done = false;
-
         _dim_order = new int[m_pTensor->m_nDim];
         _dim_order_size = m_pTensor->m_nDim;
-
+        _dim_order_entered = new bool[m_pTensor->m_nDim];
+        for(int i = 0;i<m_pTensor->m_nDim;i++){
+            _dim_order[i] = i;
+        }
+    }
+    _Const_Iterator(Tensor<T>& pTensor){
+        m_pTensor = &pTensor;
+        _index = 0;
+        _real_index = 0;
+        _indices = new int[m_pTensor->m_nDim];
+        std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
+        _done = false;
+        _dim_order = new int[m_pTensor->m_nDim];
+        _dim_order_size = m_pTensor->m_nDim;
         _dim_order_entered = new bool[m_pTensor->m_nDim];
         for(int i = 0;i<m_pTensor->m_nDim;i++){
             _dim_order[i] = i;
@@ -263,22 +301,37 @@ public:
     _Const_Iterator(const Tensor<T>* pTensor, std::initializer_list<int> dim_order){
         m_pTensor = pTensor;
         _index = 0;
-
+        _real_index = 0;
         _indices = new int[m_pTensor->m_nDim];
         std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
         _done = false;
-
         _dim_order = new int[dim_order.size()];
         _dim_order_size = dim_order.size();
-
         _dim_order_entered = new bool[dim_order.size()];
         for(int i = 0;i<dim_order.size();i++){
             _dim_order[i] = *(dim_order.begin()+i);
         }
+
+    }
+    _Const_Iterator(const Tensor<T>* pTensor, std::vector<int> dim_order){
+        m_pTensor = pTensor;
+        _index = 0;
+        _real_index = 0;
+        _indices = new int[m_pTensor->m_nDim];
+        std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
+        _done = false;
+        _dim_order = new int[dim_order.size()];
+        _dim_order_size = dim_order.size();
+        _dim_order_entered = new bool[dim_order.size()];
+        for(int i = 0;i<dim_order.size();i++){
+            _dim_order[i] = *(dim_order.begin()+i);
+        }
+
     }
     _Const_Iterator(const _Const_Iterator& other){
         m_pTensor = other.m_pTensor;
         _index = other._index;
+        _real_index = other._real_index;
 
         _indices = new int[m_pTensor->m_nDim];
         for(int i = 0;i<m_pTensor->m_nDim;i++){
@@ -300,6 +353,7 @@ public:
             return *this;
         }
         m_pTensor = other.m_pTensor;
+        _real_index = other._real_index;
         _index = other._index;
         if(_indices != nullptr){
             delete[] _indices;
@@ -337,19 +391,19 @@ public:
         return !(operator==(other));
     }
 
-    _Const_Iterator& operator++(){
+    inline _Const_Iterator& operator++(){
         _index++;
         // 按照_dim_order更新索引
-        std::fill(_dim_order_entered, _dim_order_entered + m_pTensor->m_nDim, true);
         for(int dim = m_pTensor->m_nDim-1;dim>=0;dim--){
             if(_indices[dim] < m_pTensor->m_dims[_dim_order[dim]]-1){ // _indices的顺序与_dim_order相同，与标准顺序不同
                 _indices[dim]++;
-                std::fill(_dim_order_entered+dim+1,_dim_order_entered+m_pTensor->m_nDim,false);
+                _real_index += m_pTensor->m_strides[_dim_order[dim]];
                 break;
             }else{
                 if(dim == 0){
                     _done = true;
                 }
+                _real_index -= m_pTensor->m_strides[_dim_order[dim]]*(_indices[dim]);
                 _indices[dim] = 0;
             }
         }
@@ -369,16 +423,19 @@ public:
         return tmp;
     }
 
+    _Const_Iterator operator+=(int n){
+        for(int i = 0;i<n;i++){
+            ++(*this);
+        }
+        return *this;
+    }
+
 
 
 
 
     T& operator*(){
-        int index = m_pTensor->m_start_index;
-        for(int i = 0;i<m_pTensor->m_nDim;i++){
-            index += _indices[i]*m_pTensor->m_strides[_dim_order[i]];
-        }
-        return m_pTensor->m_pData.get()[index];
+        return m_pTensor->m_pData.get()[_real_index];
     }
 
     bool done(){
@@ -388,13 +445,15 @@ public:
     bool hasNext(){
         return !done();
     }
-    
+
     void reset(){
         _index = 0;
         std::fill(_indices, _indices + m_pTensor->m_nDim, 0);
         _done = false;
         std::fill(_dim_order_entered, _dim_order_entered + m_pTensor->m_nDim, true);
     }
+
+
 
 };
 }

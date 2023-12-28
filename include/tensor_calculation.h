@@ -3,48 +3,83 @@
 #include "tensor.h"
 #include "iterator.h"
 #include "tensor_operation.h"
-#include <cmath>
+#include <chrono>
 namespace ts{
 
     template<typename U>
     Tensor<U> operator+(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        bool done = false;
-
         std::vector<int> broadcast_dims = get_broadcast_shape({lhs,rhs});
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
-        Tensor<U> res(lhs_,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&lhs_);
-        typename Tensor<U>::_Const_Iterator it_rhs(&rhs_);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = *it_lhs + *it_rhs;
-            it_lhs++;
-            it_rhs++;
-            it_res++;
+        Tensor<U> res(lhs.shape());
+        std::cout<<rhs<<std::endl;
+        long lhs_index = 0;
+        long rhs_index = 0;
+        long res_index = 0;
+        long* _indices = new long[lhs_.m_nDim];
+        for(int i = 0;i<lhs_.m_nDim;i++){
+            _indices[i] = 0;
+        }
+        // 按照_dim_order更新索引
+        bool _done = false;
+        while(!_done){
+            res.data_ptr()[res_index] = lhs_.data_ptr()[lhs_index] + rhs_.data_ptr()[rhs_index];
+            for(long dim = lhs_.m_nDim-1;dim>=0;dim--){
+                if(_indices[dim] < lhs_.m_dims[dim]-1){ 
+                    _indices[dim]++;
+                    lhs_index += lhs_.m_strides[dim];
+                    rhs_index += rhs_.m_strides[dim];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        _done = true;
+                    }
+                    lhs_index -= lhs_.m_strides[dim]*(_indices[dim]);
+                    rhs_index -= rhs_.m_strides[dim]*(_indices[dim]);
+                    res_index -= res.m_strides[dim]*(_indices[dim]);
+                    _indices[dim] = 0;
+                }
+            }
         }
 
         return res;
-
     }
     template<typename U>
     Tensor<U> operator-(const Tensor<U>& lhs, const Tensor<U>& rhs){
-
         std::vector<int> broadcast_dims = get_broadcast_shape({lhs,rhs});
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
-        Tensor<U> res(lhs_,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&lhs_);
-        typename Tensor<U>::_Const_Iterator it_rhs(&rhs_);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while (!it_res.done()) {
-            // 通过迭代器直接访问并操作张量的元素
-            *it_res = *it_lhs - *it_rhs;
-
-            // 递增迭代器
-            it_lhs++;
-            it_rhs++;
-            it_res++;
+        Tensor<U> res(lhs.shape());
+        std::cout<<rhs<<std::endl;
+        long lhs_index = 0;
+        long rhs_index = 0;
+        long res_index = 0;
+        long* _indices = new long[lhs_.m_nDim];
+        for(int i = 0;i<lhs_.m_nDim;i++){
+            _indices[i] = 0;
+        }
+        // 按照_dim_order更新索引
+        bool _done = false;
+        while(!_done){
+            res.data_ptr()[res_index] = lhs_.data_ptr()[lhs_index] - rhs_.data_ptr()[rhs_index];
+            for(long dim = lhs_.m_nDim-1;dim>=0;dim--){
+                if(_indices[dim] < lhs_.m_dims[dim]-1){ 
+                    _indices[dim]++;
+                    lhs_index += lhs_.m_strides[dim];
+                    rhs_index += rhs_.m_strides[dim];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        _done = true;
+                    }
+                    lhs_index -= lhs_.m_strides[dim]*(_indices[dim]);
+                    rhs_index -= rhs_.m_strides[dim]*(_indices[dim]);
+                    res_index -= res.m_strides[dim]*(_indices[dim]);
+                    _indices[dim] = 0;
+                }
+            }
         }
 
         return res;
@@ -55,19 +90,36 @@ namespace ts{
         std::vector<int> broadcast_dims = get_broadcast_shape({lhs,rhs});
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
-        Tensor<U> res(lhs_,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&lhs_);
-        typename Tensor<U>::_Const_Iterator it_rhs(&rhs_);
-        typename Tensor<U>::_Iterator it_res(&res);
-
-        while (!it_res.done()) {
-            // 通过迭代器直接访问并操作张量的元素
-            *it_res = *it_lhs * *it_rhs;
-
-            // 递增迭代器
-            it_lhs++;
-            it_rhs++;
-            it_res++;
+        Tensor<U> res(lhs.shape());
+        std::cout<<rhs<<std::endl;
+        long lhs_index = 0;
+        long rhs_index = 0;
+        long res_index = 0;
+        long* _indices = new long[lhs_.m_nDim];
+        for(int i = 0;i<lhs_.m_nDim;i++){
+            _indices[i] = 0;
+        }
+        // 按照_dim_order更新索引
+        bool _done = false;
+        while(!_done){
+            res.data_ptr()[res_index] = lhs_.data_ptr()[lhs_index] * rhs_.data_ptr()[rhs_index];
+            for(long dim = lhs_.m_nDim-1;dim>=0;dim--){
+                if(_indices[dim] < lhs_.m_dims[dim]-1){ 
+                    _indices[dim]++;
+                    lhs_index += lhs_.m_strides[dim];
+                    rhs_index += rhs_.m_strides[dim];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        _done = true;
+                    }
+                    lhs_index -= lhs_.m_strides[dim]*(_indices[dim]);
+                    rhs_index -= rhs_.m_strides[dim]*(_indices[dim]);
+                    res_index -= res.m_strides[dim]*(_indices[dim]);
+                    _indices[dim] = 0;
+                }
+            }
         }
 
         return res;
@@ -79,19 +131,36 @@ namespace ts{
         std::vector<int> broadcast_dims = get_broadcast_shape({lhs,rhs});
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
-        Tensor<U> res(lhs_,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&lhs_);
-        typename Tensor<U>::_Const_Iterator it_rhs(&rhs_);
-        typename Tensor<U>::_Iterator it_res(&res);
-
-        while (!it_res.done()) {
-            // 通过迭代器直接访问并操作张量的元素
-            *it_res = *it_lhs / *it_rhs;
-
-            // 递增迭代器
-            it_lhs++;
-            it_rhs++;
-            it_res++;
+        Tensor<U> res(lhs.shape());
+        std::cout<<rhs<<std::endl;
+        long lhs_index = 0;
+        long rhs_index = 0;
+        long res_index = 0;
+        long* _indices = new long[lhs_.m_nDim];
+        for(int i = 0;i<lhs_.m_nDim;i++){
+            _indices[i] = 0;
+        }
+        // 按照_dim_order更新索引
+        bool _done = false;
+        while(!_done){
+            res.data_ptr()[res_index] = lhs_.data_ptr()[lhs_index] / rhs_.data_ptr()[rhs_index];
+            for(long dim = lhs_.m_nDim-1;dim>=0;dim--){
+                if(_indices[dim] < lhs_.m_dims[dim]-1){ 
+                    _indices[dim]++;
+                    lhs_index += lhs_.m_strides[dim];
+                    rhs_index += rhs_.m_strides[dim];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        _done = true;
+                    }
+                    lhs_index -= lhs_.m_strides[dim]*(_indices[dim]);
+                    rhs_index -= rhs_.m_strides[dim]*(_indices[dim]);
+                    res_index -= res.m_strides[dim]*(_indices[dim]);
+                    _indices[dim] = 0;
+                }
+            }
         }
 
         return res;
