@@ -5,7 +5,9 @@ cmake_minimum_required(VERSION 3.0)
 project(libtensor)
 
 # Set the C++ standard you are using (e.g., C++11, C++14, C++17, C++20)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 
 # The following folder will be included
 include_directories(${PROJECT_SOURCE_DIR}/include)

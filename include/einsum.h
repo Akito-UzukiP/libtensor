@@ -50,16 +50,17 @@ namespace ts{
                     dims[c] = args[i].shape()[j];
                     cur_index[c] = 0;
                 }else{
+                    //continue;
                     assert(dims[c] == args[i].shape()[j]);
                 }
             }
         }
         // 在这里可以创建output矩阵
         std::vector<int> output_shape;
-        for(char c : output_part){
-            if(dims.find(c) == dims.end()){
-                assert(is_scalar_output);
-            }else{
+        if(is_scalar_output){
+            output_shape.push_back(1);
+        }else{
+            for(char c : output_part){
                 output_shape.push_back(dims[c]);
             }
         }
@@ -70,7 +71,7 @@ namespace ts{
         bool done = false;
         while(!done){
             // 创建一个用于存储当前索引的vector
-            std::vector<int> index_for_each_input;
+            std::vector<T> index_for_each_input;
 
             // 对每个输入Tensor计算索引
             // for(const auto& input_dim : input_dims){
@@ -94,14 +95,18 @@ namespace ts{
                 temp_result *= value;
             }
 
-            // 根据output_part计算输出索引
-            std::vector<int> output_indices;
-            for(char dim : output_part){
-                output_indices.push_back(cur_index[dim]);
-            }
+            if(is_scalar_output){
+                output({0}) += temp_result;
+            }else{
+                // 根据output_part计算输出索引
+                std::vector<int> output_indices;
+                for(char dim : output_part){
+                    output_indices.push_back(cur_index[dim]);
+                }
 
-            // 将结果累加到输出Tensor的相应位置
-            output(output_indices) += temp_result;
+                // 将结果累加到输出Tensor的相应位置
+                output(output_indices) += temp_result;
+            }
 
             // 更新索引
             for(int i = dim_iter_order.size() - 1; i >= 0; i--){
@@ -116,19 +121,6 @@ namespace ts{
                 }
             }
         }
-
-        // 此时 output Tensor 包含了结果
-
-
-
-
-
-
-        // ... 根据dims和args实现einsum逻辑
-        // 创建输出张量
-        // 迭代所有索引组合
-        // 计算并填充输出张量
-        // 返回输出张量
         return output;
     }
 

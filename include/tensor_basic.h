@@ -5,6 +5,8 @@
 #include <string>
 #include <typeinfo>
 #include <iostream>
+#include <iomanip>
+#include <type_traits>
 #include <random>
 #include <memory>
 namespace ts {
@@ -408,14 +410,31 @@ namespace ts {
     template <typename U>
     std::ostream &operator<<(std::ostream &os, const Tensor<U> &m) {
         if (m.m_nDim == 0) {
-            os << "[]";
+            os << "tensor([])";
             return os;
         }
+
+        std::vector<bool> print_ellipsis(m.m_nDim, false); // 用于跟踪是否打印省略号
+        for(int i = 0;i<m.m_nDim;i++){
+            if(m.m_dims[i] > 10){
+                print_ellipsis[i] = true;
+            }
+        }
+        if constexpr (std::is_floating_point<U>::value) {
+            os << std::fixed << std::setprecision(4);
+        }
+        int max_length = 0;
+        if constexpr(std::is_integral<U>::value || std::is_floating_point<U>::value){
+            for (int i = 0; i < m.total_size(); ++i) {
+                max_length = std::max(max_length, static_cast<int>(std::to_string(m.m_pData.get()[i]).length()));
+            }
+        }
+
 
         std::vector<int> indices(m.m_nDim, 0);  // 用于存储当前索引的向量
         std::vector<bool> dimensionEntered(m.m_nDim, false); // 用于跟踪是否进入了一个新的维度
         bool done = false;
-
+        os<< "tensor(";
         while (!done) {
             // 遍历维度
             for (int dim = 0; dim < m.m_nDim; dim++) {
@@ -430,13 +449,29 @@ namespace ts {
             for (int i = 0; i < m.m_nDim; ++i) {
                 index += indices[i] * m.m_strides[i];
             }
-            os << m.m_pData.get()[index];
 
+            if constexpr(std::is_integral<U>::value || std::is_floating_point<U>::value){
+                os << std::setw(max_length) << m.m_pData.get()[index];
+            }else{
+                os << m.m_pData.get()[index];
+            }
+            std::string prefix_space = "        "; // 用于打印每一行的前缀空格
             // 更新索引并检查是否完成
             for (int dim = m.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
                 if (indices[dim] < m.m_dims[dim] - 1) { 
-                    indices[dim]++;
                     os << ", ";
+                    for(int i = 0;i<dim;i++){
+                        prefix_space += " ";
+                    }
+                    if(indices[dim] == 2 && print_ellipsis[dim]){
+                        if(dim == m.m_nDim-1)os << " ..., ";
+                        if(dim < m.m_nDim-1)os << "\n" << prefix_space << "...";
+                        indices[dim] = m.m_dims[dim] - 3;
+                    }else{
+                        indices[dim]++;
+                    }
+                    if(dim == m.m_nDim-2) os << "\n" << prefix_space;
+                    if(dim < m.m_nDim-2) os << "\n\n"<< prefix_space;
                     std::fill(dimensionEntered.begin() + dim + 1, dimensionEntered.end(), false);
                     break;
                 } else {
@@ -446,6 +481,7 @@ namespace ts {
                 }
             }
         }
+        os << ")";
 
         return os;
     }
@@ -610,6 +646,7 @@ namespace ts {
         for(int i = 0;i<m_nDim;i++){
             index += *(indices.begin()+i)*m_strides[i];
         }
+        return m_pData.get()[index];
     }
 
     template <typename T>
