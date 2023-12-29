@@ -13,8 +13,7 @@ void testConstructionAndAssignment() {
     ts::Tensor<int> c = b; // 测试复制构造函数
     ts::Tensor<int> d;
     d = b; // 测试赋值运算符
-    // 测试内容是否相同
-    //assert(b.data_ptr() != c.data_ptr()); // 确保深复制
+    //assert(a.data_ptr() != c.data_ptr()); // 确保深复制
     assert(b(0, 0) == c(0, 0)); // 检查内容
 }
 
@@ -40,6 +39,7 @@ void testMatrixOperations() {
     ts::Tensor<int> a = ts::arange<int>(0, 6).view({2, 3});
     ts::Tensor<int> b = ts::arange<int>(0, 6).view({3, 2});
     ts::Tensor<int> c = a.matmul(b);
+    std::cout<<c<<std::endl;
     // 测试矩阵乘法结果
     // ...
 }
@@ -73,14 +73,16 @@ int main() {
     // end = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double> elapsed = end - start;
     // std::cout << "Time taken by multiplication: " << elapsed.count() << " s\n";
-    ts::Tensor<int> a = ts::arange<int>(1, 26).view({5, 5});
-    ts::Tensor<int> b(a,false);
-    b = b.transpose(0,1);
-    //b = b.transpose(0,1);
-    std::cout<<a * b<<std::endl;
-    std::cout<<a - b<<std::endl;
-    std::cout<<a + b<<std::endl;
-    std::cout<<a / b<<std::endl;
+    // ts::Tensor<int> a = ts::arange<int>(1, 126).view({5,5,5});
+    // std::cout << a << std::endl;
+    // auto start = std::chrono::high_resolution_clock::now();
+    // std::cout << a.sum(2) << std::endl;
+    // testConstructionAndAssignment();
+    // testElementAccess();
+    // testArithmeticOperations();
+    // testMatrixOperations();
+
+    
     // std::cout<<a.matmul(b)<<std::endl;
     // typename ts::Tensor<double>::_Const_Iterator iter(a);
 
@@ -125,5 +127,13 @@ int main() {
 
     // ts::Tensor<int> test = ts::arange<int>(0, 10).view({2, 5});
     // std::cout<< test * test <<std::endl;
+
+
+    ts::Tensor<int> a = ts::arange<int>(0,9).view({3,3}); // b,h,w
+    ts::Tensor<int> b = a.permute({1,0});
+    std::cout << a << std::endl;
+    std::cout << b << std::endl;
+    std::cout << ts::matmul(a,b) << std::endl;
+
     return 0;
 }

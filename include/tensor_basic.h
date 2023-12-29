@@ -57,7 +57,11 @@ namespace ts {
             Tensor<T> operator()(int dim_index);  // 返回指定维度(n-1维)
             Tensor<T> operator()(int dim_index, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
           //  Tensor<T> operator()(std::initializer_list<int> dim_target, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
-
+            // Contiguous操作 
+            // 检测是否连续
+            bool is_contiguous() const;
+            // 返回内存连续化的版本
+            Tensor<T> contiguous() const;
             // View操作
             Tensor<T> view(const std::initializer_list<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
             //Tensor<T> view(const std::vector<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
@@ -66,12 +70,12 @@ namespace ts {
             friend Tensor<U> view(const Tensor<U>& org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
 
             // Transpose操作
-            Tensor<T> transpose(const int dim1, const int dim2); // 返回一个新的张量，该张量与原张量共享数据，但stride和dims被交换
+            Tensor<T> transpose(const int dim1, const int dim2) const; // 返回一个新的张量，该张量与原张量共享数据，但stride和dims被交换
             template <typename U>
             friend Tensor<U> transpose(const Tensor<U>& org, const int dim1, const int dim2); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
             
             // Permute操作
-            Tensor<T> permute(const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但维度顺序不同
+            Tensor<T> permute(const std::initializer_list<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但维度顺序不同
             template <typename U>
             friend Tensor<U> permute(const Tensor<U>& org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但维度顺序不同
             // Slice操作
@@ -131,21 +135,21 @@ namespace ts {
             template <typename U>
             friend Tensor<U> log(const Tensor<U>& lhs); // 张量取对数
 
-            Tensor<T> add(const Tensor<T>& t); // 张量加法
+            Tensor<T> add(const Tensor<T>& t) const; // 张量加法
             template <typename U>
             friend Tensor<U> add(const Tensor<U>& t1, const Tensor<U>& t2); // 张量加法
-            Tensor<T> sub(const Tensor<T>& t); // 张量减法
+            Tensor<T> sub(const Tensor<T>& t) const; // 张量减法
             template <typename U>
             friend Tensor<U> sub(const Tensor<U>& t1, const Tensor<U>& t2); // 张量减法
-            Tensor<T> mul(const Tensor<T>& t); // 张量乘法
+            Tensor<T> mul(const Tensor<T>& t) const; // 张量乘法
             template <typename U>
             friend Tensor<U> mul(const Tensor<U>& t1, const Tensor<U>& t2); // 张量乘法
-            Tensor<T> div(const Tensor<T>& t); // 张量除法
+            Tensor<T> div(const Tensor<T>& t) const; // 张量除法
             template <typename U>
             friend Tensor<U> div(const Tensor<U>& t1, const Tensor<U>& t2); // 张量除法
 
             // 矩阵乘法
-            Tensor<T> matmul(const Tensor<T>& t); // 矩阵乘法
+            Tensor<T> matmul(const Tensor<T>& t) const; // 矩阵乘法
             template <typename U>
             friend Tensor<U> matmul(const Tensor<U>& t1, const Tensor<U>& t2); // 矩阵乘法
 
@@ -200,6 +204,9 @@ namespace ts {
         m_total_size = 0;
         m_dims = nullptr;
         m_pData = nullptr;
+        m_strides = nullptr;
+        m_start_index = 0;
+        
     }
 
     template <typename T>

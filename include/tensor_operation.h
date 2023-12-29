@@ -4,7 +4,53 @@
 #include "iterator.h"
 
 namespace ts{
-        // View操作群
+
+    template <typename T>
+    bool Tensor<T>::is_contiguous() const{
+        int c_stride = 1;
+        for(int i = m_nDim-1; i >=0; i--){
+            if(c_stride != m_strides[i]) return false;
+            c_stride *= m_dims[i];
+        }
+        return true;
+    }
+
+    template <typename T>
+    Tensor<T> Tensor<T>::contiguous() const{
+        Tensor<T> rtn(m_dims,m_nDim);
+        bool done = false;
+        long rtn_index = 0;
+        long org_index = m_start_index;
+        long* indices = new long[m_nDim];
+        for(int i = 0;i<m_nDim;i++){
+            indices[i] = 0;
+        }
+        while(!done){
+            rtn.data_ptr()[rtn_index] = data_ptr()[org_index];
+            for(long i = m_nDim-1;i>=0;i--){
+                std::cout << i << std::endl;
+                if(indices[i]<m_dims[i]-1){
+                    indices[i]++;
+                    rtn_index += rtn.m_strides[i];
+                    org_index += m_strides[i];
+                    break;
+                }else{
+                    if(i == 0){
+                        done = true;
+                    }
+                    rtn_index -= rtn.m_strides[i] * indices[i];
+                    org_index -= m_strides[i] * indices[i];
+                    indices[i] = 0;
+                }
+            }
+        }////// 越界！！！！！修BUG!!!!!
+        delete[] indices;
+        return rtn;
+    }
+        // View操作群 有BUG!!!! 现在的view是把操作的矩阵默认为标准连续内存排序的，没有考虑到传入矩阵的strides被transpose和permute这种交换strides操作打乱的情况。
+        // 妈耶 这太糟糕了
+        // pytorch的解决方案是添加一个.contiguous()函数，将内存重排得到一个新的连续的矩阵
+        // 先判定是否contiguous，然后做contiguous操作
     template <typename T>
     Tensor<T> Tensor<T>::view(const std::initializer_list<int>& dims) const{
         int total_size = 1;
@@ -14,7 +60,12 @@ namespace ts{
         if(total_size != this->m_total_size){
             throw std::invalid_argument("View操作的目标维度大小与原张量不匹配");
         }
-        Tensor<T> t = *this;
+        Tensor<T> t;
+        if(is_contiguous()){
+            t = *this;
+        }else{
+            t = this->contiguous();
+        }
         t.m_nDim = dims.size();
         t.m_dims = new int[t.m_nDim];
         t.m_strides = new int[t.m_nDim];
@@ -86,7 +137,7 @@ namespace ts{
     }
 
     template <typename T>
-    Tensor<T> Tensor<T>::transpose(const int dim1, const int dim2) {
+    Tensor<T> Tensor<T>::transpose(const int dim1, const int dim2) const {
         if (dim1 >= m_nDim || dim2 >= m_nDim || dim1 < 0 || dim2 < 0) {
             throw std::invalid_argument("Transpose操作的维度超出张量维度");
         }
@@ -109,7 +160,7 @@ namespace ts{
         return transposed_view;
     }
     template <typename T>
-    Tensor<T> Tensor<T>::permute(const std::initializer_list<int> &dims) {
+    Tensor<T> Tensor<T>::permute(const std::initializer_list<int> &dims) const {
         if (dims.size() != m_nDim) {
             throw std::invalid_argument("Permute操作的维度数量与张量维度数量不匹配");
         }
@@ -123,51 +174,23 @@ namespace ts{
             dim_used[dim] = true;
         }
 
-        Tensor<T> permuted_view = *this; // 创建原始张量的副本
+        Tensor<T> permuted_view = *this; // 创建原始张量的副本,shallow copy
         std::vector<int> new_dims(m_nDim);
         std::vector<int> new_strides(m_nDim);
         int i = 0;
         for (int dim : dims) {
-            new_dims[i] = m_dims[dim];
-            new_strides[i] = m_strides[dim];
+            permuted_view.m_dims[i] = m_dims[dim];
+            permuted_view.m_strides[i] = m_strides[dim];
             ++i;
         }
-        for(int i = 0;i<m_nDim;i++){
-            permuted_view.m_dims[i] = new_dims[i];
-            permuted_view.m_strides[i] = new_strides[i];
-        }
+
         return permuted_view;
     }
 
     template <typename U>
     Tensor<U> permute(const Tensor<U>& org,const std::initializer_list<int> &dims){
-        if (dims.size() != org.m_nDim) {
-            throw std::invalid_argument("Permute操作的维度数量与张量维度数量不匹配");
-        }
 
-        // 检查dims中的值是否合法且不重复
-        std::vector<bool> dim_used(org.m_nDim, false);
-        for (int dim : dims) {
-            if (dim < 0 || dim >= org.m_nDim || dim_used[dim]) {
-                throw std::invalid_argument("Permute操作中存在非法或重复维度");
-            }
-            dim_used[dim] = true;
-        }
-
-        Tensor<U> permuted_view = org; // 创建原始张量的副本
-        std::vector<int> new_dims(org.m_nDim);
-        std::vector<int> new_strides(org.m_nDim);
-        int i = 0;
-        for (int dim : dims) {
-            new_dims[i] = org.m_dims[dim];
-            new_strides[i] = org.m_strides[dim];
-            ++i;
-        }
-        for(int i = 0;i<org.m_nDim;i++){
-            permuted_view.m_dims[i] = new_dims[i];
-            permuted_view.m_strides[i] = new_strides[i];
-        }
-        return permuted_view;
+        return org.permute(dims);
     }
 
 
@@ -453,6 +476,8 @@ namespace ts{
         dim_order[0] = axis;
         typename Tensor<U>::_Const_Iterator it1(&org, dim_order, org.m_nDim);
         typename Tensor<U>::_Iterator it(&t, dim_order, org.m_nDim);
+
+        // 
         for(int i = 0;i<count;i++){
             while(it1.hasNext()){
                 *it = *it1;

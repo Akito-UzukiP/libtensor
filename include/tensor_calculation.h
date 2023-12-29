@@ -1,7 +1,6 @@
 #ifndef TS_TENSOR_CALCULATION_H
 #define TS_TENSOR_CALCULATION_H
 #include "tensor.h"
-#include "iterator.h"
 #include "tensor_operation.h"
 #include <chrono>
 namespace ts{
@@ -12,7 +11,6 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        std::cout<<rhs<<std::endl;
         long lhs_index = 0;
         long rhs_index = 0;
         long res_index = 0;
@@ -42,7 +40,7 @@ namespace ts{
                 }
             }
         }
-
+        delete[] _indices;
         return res;
     }
     template<typename U>
@@ -81,6 +79,7 @@ namespace ts{
                 }
             }
         }
+        delete[] _indices;
 
         return res;
     }
@@ -121,7 +120,7 @@ namespace ts{
                 }
             }
         }
-
+        delete[] _indices;
         return res;
     }
 
@@ -162,28 +161,46 @@ namespace ts{
                 }
             }
         }
-
+        delete[] _indices;
         return res;
     }
 
     template<typename U>
-    Tensor<U> log(const Tensor<U>& lhs){
-        Tensor<U> res(lhs,false);
-        typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it_lhs.done()){
-            *it_res = std::log(*it_lhs);
-            it_lhs++;
-            it_res++;
+    Tensor<U> log(const Tensor<U>& t){
+        Tensor<U> res(t,false);
+        long t_index = 0;
+        long res_index = 0;
+        long* _indices = new long[t.m_nDim];
+        bool done = false;
+        for(int i = 0;i<t.m_nDim;i++){
+            _indices[i] = 0;
         }
-
+        while(!done){
+            res.data_ptr()[res_index] = log(t.data_ptr()[t_index]);
+            for(long dim = t.m_nDim-1;dim>=0;dim--){
+                if(_indices[dim] < t.m_dims[dim]-1){ 
+                    _indices[dim]++;
+                    t_index += t.m_strides[dim];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        done = true;
+                    }
+                    t_index -= t.m_strides[dim]*(_indices[dim]);
+                    res_index -= res.m_strides[dim]*(_indices[dim]);
+                    _indices[dim] = 0;
+                }
+            }
+        }
+        delete[] _indices;
         return res;
 
     }
 
 
     template<typename T>
-    Tensor<T> Tensor<T>::add(const Tensor<T>& t){
+    Tensor<T> Tensor<T>::add(const Tensor<T>& t) const{
         return *this + t;
     }
 
@@ -193,7 +210,7 @@ namespace ts{
     }
 
     template<typename T>
-    Tensor<T> Tensor<T>::sub(const Tensor<T>& t){
+    Tensor<T> Tensor<T>::sub(const Tensor<T>& t) const{
         return *this - t;
     }
 
@@ -204,7 +221,7 @@ namespace ts{
     }
 
     template<typename T>
-    Tensor<T> Tensor<T>::mul (const Tensor<T>& t){
+    Tensor<T> Tensor<T>::mul (const Tensor<T>& t) const{
         return *this * t;
     }
 
@@ -215,7 +232,7 @@ namespace ts{
 
 
     template<typename T>
-    Tensor<T> Tensor<T>::div (const Tensor<T>& t){
+    Tensor<T> Tensor<T>::div (const Tensor<T>& t) const{
         return *this / t;
     }
 
@@ -226,7 +243,7 @@ namespace ts{
 
 
     template<typename T>
-    Tensor<T> Tensor<T>::matmul(const Tensor<T>& t){
+    Tensor<T> Tensor<T>::matmul(const Tensor<T>& t) const{
         if(m_nDim < 2 || t.m_nDim < 2){
             throw std::invalid_argument("Dimensions of lhs and rhs must be greater than 1.");
         }
@@ -258,395 +275,375 @@ namespace ts{
         Tensor<T> lhs = this->view({b,m,k});
         Tensor<T> rhs = t.view({b,k,n});
         Tensor<T> res = zeros<T>({b,m,n});
+        long lhs_index = lhs.m_start_index, rhs_index = rhs.m_start_index, res_index = res.m_start_index;
+
+        for(int i = 0;i<3;i++){
+            std::cout << rhs.m_strides[i] << std::endl;
+        }
 
         for(int i = 0; i < b; i++){
             for(int j = 0; j < m; j++){
                 for(int l = 0; l < n; l++){
                     for(int p = 0; p < k; p++){
-                        res(i,j,l) += lhs(i,j,p) * rhs(i,p,l);
+                        // std::cout << res_index  << " add: " << lhs.data_ptr()[lhs_index] << " and "<<  rhs.data_ptr()[rhs_index] << std::endl;
+                        // std::cout << lhs_index << " " << rhs_index << std::endl;
+                        // std::cout << " b : " << i << " m : " << j << " n : " << l << " k : " << p << std::endl;
+                        res.data_ptr()[res_index] += lhs.data_ptr()[lhs_index] * rhs.data_ptr()[rhs_index];
+                        lhs_index += lhs.m_strides[2];
+                        rhs_index += rhs.m_strides[1];
                     }
+                    lhs_index -= lhs.m_strides[2] * k;
+                    rhs_index -= rhs.m_strides[1] * k;
+                    res_index += res.m_strides[2];
+                    rhs_index += rhs.m_strides[2];
                 }
+                res_index -= res.m_strides[2] * n;
+                rhs_index -= rhs.m_strides[2] * n;
+                res_index += res.m_strides[1];
+                lhs_index += lhs.m_strides[1];
             }
+            res_index -= res.m_strides[1] * m;
+            lhs_index -= lhs.m_strides[1] * m;
+            lhs_index += lhs.m_strides[0];
+            rhs_index += rhs.m_strides[0];
+            res_index += res.m_strides[0];
         }
-
+        
         return res.view(dims,nDim);
     }
 
     template<typename U>
     Tensor<U> matmul(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        if(lhs.m_nDim < 2 || rhs.m_nDim < 2){
-            throw std::invalid_argument("Dimensions of lhs and rhs must be greater than 1.");
-        }
-        // for(int i = 0; i < lhs.m_nDim-2; i++){
-        //     if(lhs.m_dims[i] != rhs.m_dims[i]){
-        //         throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
-        //     }
-        // }
-        if(lhs.m_dims[lhs.m_nDim-1] != rhs.m_dims[rhs.m_nDim-2]){
-            throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
-        }
-
-        Tensor<U> lhs_ = transpose(lhs, lhs.m_nDim-2,lhs.m_nDim-1);
-        Tensor<U> rhs_ = rhs;
-        std::vector<int> broadcast_dims = get_broadcast_shape({lhs_,rhs_});
-        lhs_ = broadcast(lhs_, broadcast_dims);
-        rhs_ = broadcast(rhs_, broadcast_dims);
-        lhs_ = transpose(lhs_, lhs_.m_nDim-2,lhs_.m_nDim-1);
-       // rhs_ = transpose(rhs_, rhs_.m_nDim-2,rhs_.m_nDim-1);
-
-
-        int m = lhs_.m_dims[lhs_.m_nDim-2];
-        int n = rhs_.m_dims[rhs_.m_nDim-1];
-        int k = lhs_.m_dims[lhs_.m_nDim-1];
-        int b = 1;
-        int* dims = new int[lhs_.m_nDim];
-        int nDim = lhs_.m_nDim;
-        for(int i = 0; i < lhs_.m_nDim-2; i++){
-            dims[i] = lhs_.m_dims[i];
-        }
-        dims[lhs_.m_nDim-2] = m;
-        dims[lhs_.m_nDim-1] = n;
-
-        if(lhs_.m_nDim > 2){
-            for(int i = 0; i < lhs_.m_nDim-2; i++){
-                b *= lhs_.m_dims[i];
-            }
-        }
-        // std::cout<<b<<" "<<m<<" "<<k<<" "<<n<<std::endl;
-        // std::cout<< lhs_.size()<<" "<<rhs_.size()<<std::endl;
-        lhs_ = lhs_.view({b,m,k});
-        rhs_ = rhs_.view({b,k,n});
-        Tensor<U> res = zeros<U>({b,m,n});
-
-        for(int i = 0; i < b; i++){
-            for(int j = 0; j < m; j++){
-                for(int l = 0; l < n; l++){
-                    for(int p = 0; p < k; p++){
-                        res(i,j,l) += lhs_(i,j,p) * rhs_(i,p,l);
-                    }
-                }
-            }
-        }
-
-        return res.view(dims,nDim);
+        return lhs.matmul(rhs);
     }
 
-    template<typename U>
-    Tensor<U> sum(const Tensor<U>& t, int dim){
-        if(dim < 0 || dim >= t.m_nDim){
-            throw std::invalid_argument("Invalid dimension.");
-        }
-        int* dims = new int[t.m_nDim-1];
-        int nDim = t.m_nDim-1;
-        int j = 0;
-        for(int i = 0; i < t.m_nDim; i++){
-            if(i != dim){
-                dims[j] = t.m_dims[i];
-                j++;
-            }
-        }
-        Tensor<U> res(dims,nDim);
-        int* dim_order = new int[t.m_nDim];
-        int i = 0;
-        dim_order[t.m_nDim-1] = dim;
-        for(int j = 0; j < t.m_nDim; j++){
-            if(j != dim){
-                dim_order[i] = j;
-                i++;
-            }
-        }
-
-        typename Tensor<U>::_Const_Iterator it(&t,dim_order,t.m_nDim);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it.done()){
-            for(int i = 0;i<t.m_dims[dim];i++){
-                *it_res += *it;
-                it++;
-            }
-            it_res++;
-        }
-
-        return res;
-    }
     template<typename T>
     Tensor<T> Tensor<T>::sum( int dim){
         if(dim < 0 || dim >= m_nDim){
             throw std::invalid_argument("Invalid dimension.");
         }
-        int* dims = new int[m_nDim-1];
-        int nDim = m_nDim-1;
-        int j = 0;
-        for(int i = 0; i < m_nDim; i++){
-            if(i != dim){
-                dims[j] = m_dims[i];
-                j++;
+        int* dims;
+        Tensor<T> res;
+        if( m_nDim == 1){
+            dims = new int[1];
+            dims[0] = 1;
+            res = zeros<T>(dims,m_nDim);
+        }else{
+            dims = new int[m_nDim-1];
+            int nDim = m_nDim-1;
+            int j = 0;
+            for(int i = 0; i < m_nDim; i++){ // 如果dim=3，Tensor是5维度，则将0124维度赋予dims
+                if(i != dim){
+                    dims[j] = m_dims[i];
+                    j++;
+                }
             }
+            res = zeros<T>(dims,nDim);
         }
-        Tensor<T> res(dims,nDim);
         int* dim_order = new int[m_nDim];
         int i = 0;
         dim_order[m_nDim-1] = dim;
-        for(int j = 0; j < m_nDim; j++){
+        for(int j = 0; j < m_nDim; j++){ // 0,1,2,4,3
             if(j != dim){
                 dim_order[i] = j;
                 i++;
             }
         }
 
-        typename Tensor<T>::_Const_Iterator it(this,dim_order,m_nDim);
-        typename Tensor<T>::_Iterator it_res(&res);
-        while(!it.done()){
-            for(int i = 0;i<m_dims[dim];i++){
-                *it_res += *it;
-                it++;
-            }
-            it_res++;
+        long t_index = m_start_index;
+        long res_index = res.m_start_index;
+        long* res_indices = new long[res.m_nDim];
+        bool done = false;
+        for(int i = 0;i<res.m_nDim;i++){
+            res_indices[i] = 0;
         }
 
+        while(!done){ 
+
+            // 在第一个for循环对压缩掉的那个维度进行操作
+            for(long i = 0;i<m_dims[dim_order[m_nDim-1]];i++){
+                res.data_ptr()[res_index] += data_ptr()[t_index];
+                t_index += m_strides[dim_order[m_nDim-1]];
+            }
+
+            // 更新坐标的同时根据stride即刻更新index
+            t_index -= m_strides[dim_order[m_nDim-1]]*m_dims[dim_order[m_nDim-1]];
+
+            for(long dim = res.m_nDim-1;dim>=0;dim--){ // dim: 3 2 1 0 
+                if(res_indices[dim] < res.m_dims[dim]-1){ 
+                    res_indices[dim]++;
+                    t_index += this->m_strides[dim_order[dim]];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        done = true;
+                    }
+                    t_index -= this->m_strides[dim_order[dim]]*(res_indices[dim]);
+                    res_index -= res.m_strides[dim]*(res_indices[dim]);
+                    res_indices[dim] = 0;
+                }
+            }
+        }
+
+        delete[] dims;
+        delete[] dim_order;
+        delete[] res_indices;
         return res;
     }
 
     template<typename U>
-    Tensor<U> mean(const Tensor<U>& t, int dim){
-        if(dim < 0 || dim >= t.m_nDim){
-            throw std::invalid_argument("Invalid dimension.");
-        }
-        int* dims = new int[t.m_nDim-1];
-        int nDim = t.m_nDim-1;
-        int j = 0;
-        for(int i = 0; i < t.m_nDim; i++){
-            if(i != dim){
-                dims[j] = t.m_dims[i];
-                j++;
-            }
-        }
-        Tensor<U> res(dims,nDim);
-        int* dim_order = new int[t.m_nDim];
-        int i = 0;
-        dim_order[t.m_nDim-1] = dim;
-        for(int j = 0; j < t.m_nDim; j++){
-            if(j != dim){
-                dim_order[i] = j;
-                i++;
-            }
-        }
-
-        typename Tensor<U>::_Const_Iterator it(&t,dim_order,t.m_nDim);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it.done()){
-            for(int i = 0;i<t.m_dims[dim];i++){
-                *it_res += *it;
-                it++;
-            }
-            *it_res /= t.m_dims[dim];
-            it_res++;
-        }
-
-        return res;
+    Tensor<U> sum(const Tensor<U>& t, int dim){
+        return t.sum(dim);
     }
     template<typename T>
     Tensor<T> Tensor<T>::mean( int dim){
         if(dim < 0 || dim >= m_nDim){
             throw std::invalid_argument("Invalid dimension.");
         }
-        int* dims = new int[m_nDim-1];
-        int nDim = m_nDim-1;
-        int j = 0;
-        for(int i = 0; i < m_nDim; i++){
-            if(i != dim){
-                dims[j] = m_dims[i];
-                j++;
+        int* dims;
+        Tensor<T> res;
+        if( m_nDim == 1){
+            dims = new int[1];
+            dims[0] = 1;
+            res = zeros<T>(dims,m_nDim);
+        }else{
+            dims = new int[m_nDim-1];
+            int nDim = m_nDim-1;
+            int j = 0;
+            for(int i = 0; i < m_nDim; i++){ // 如果dim=3，Tensor是5维度，则将0124维度赋予dims
+                if(i != dim){
+                    dims[j] = m_dims[i];
+                    j++;
+                }
             }
+            res = zeros<T>(dims,nDim);
         }
-        Tensor<T> res(dims,nDim);
         int* dim_order = new int[m_nDim];
         int i = 0;
         dim_order[m_nDim-1] = dim;
-        for(int j = 0; j < m_nDim; j++){
+        for(int j = 0; j < m_nDim; j++){ // 0,1,2,4,3
             if(j != dim){
                 dim_order[i] = j;
                 i++;
             }
         }
 
-        typename Tensor<T>::_Const_Iterator it(this,dim_order,m_nDim);
-        typename Tensor<T>::_Iterator it_res(&res);
-        while(!it.done()){
-            for(int i = 0;i<m_dims[dim];i++){
-                *it_res += *it;
-                it++;
-            }
-            *it_res /= m_dims[dim];
-            it_res++;
+        long t_index = m_start_index;
+        long res_index = res.m_start_index;
+        long* res_indices = new long[res.m_nDim];
+        bool done = false;
+        for(int i = 0;i<res.m_nDim;i++){
+            res_indices[i] = 0;
         }
 
+        while(!done){ 
+
+            // 在第一个for循环对压缩掉的那个维度进行操作
+            for(long i = 0;i<m_dims[dim_order[m_nDim-1]];i++){
+                res.data_ptr()[res_index] += data_ptr()[t_index];
+                t_index += m_strides[dim_order[m_nDim-1]];
+            }
+            res.data_ptr()[res_index] /= m_dims[dim];
+ 
+            // 更新坐标的同时根据stride即刻更新index
+            t_index -= m_strides[dim_order[m_nDim-1]]*m_dims[dim_order[m_nDim-1]];
+
+            for(long dim = res.m_nDim-1;dim>=0;dim--){ // dim: 3 2 1 0 
+                if(res_indices[dim] < res.m_dims[dim]-1){ 
+                    res_indices[dim]++;
+                    t_index += this->m_strides[dim_order[dim]];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        done = true;
+                    }
+                    t_index -= this->m_strides[dim_order[dim]]*(res_indices[dim]);
+                    res_index -= res.m_strides[dim]*(res_indices[dim]);
+                    res_indices[dim] = 0;
+                }
+            }
+        }
+
+        delete[] dims;
+        delete[] dim_order;
+        delete[] res_indices;
         return res;
     }
+
 
     template<typename U>
-    Tensor<U> max(const Tensor<U>& t, int dim){
-        if(dim < 0 || dim >= t.m_nDim){
-            throw std::invalid_argument("Invalid dimension.");
-        }
-        int* dims = new int[t.m_nDim-1];
-        int nDim = t.m_nDim-1;
-        int j = 0;
-        for(int i = 0; i < t.m_nDim; i++){
-            if(i != dim){
-                dims[j] = t.m_dims[i];
-                j++;
-            }
-        }
-        Tensor<U> res(dims,nDim);
-        int* dim_order = new int[t.m_nDim];
-        int i = 0;
-        dim_order[t.m_nDim-1] = dim;
-        for(int j = 0; j < t.m_nDim; j++){
-            if(j != dim){
-                dim_order[i] = j;
-                i++;
-            }
-        }
+    Tensor<U> mean(const Tensor<U>& t, int dim){
+        return t.mean(dim);
+    }    
 
-        typename Tensor<U>::_Const_Iterator it(&t,dim_order,t.m_nDim);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it.done()){
-            for(int i = 0;i<t.m_dims[dim];i++){
-                if(i == 0){
-                    *it_res = *it;
-                }else{
-                    *it_res = std::max(*it_res,*it);
-                }
-                it++;
-            }
-            it_res++;
-        }
-
-        return res;
-    }
     template<typename T>
     Tensor<T> Tensor<T>::max( int dim){
         if(dim < 0 || dim >= m_nDim){
             throw std::invalid_argument("Invalid dimension.");
         }
-        int* dims = new int[m_nDim-1];
-        int nDim = m_nDim-1;
-        int j = 0;
-        for(int i = 0; i < m_nDim; i++){
-            if(i != dim){
-                dims[j] = m_dims[i];
-                j++;
+        int* dims;
+        Tensor<T> res;
+        if( m_nDim == 1){
+            dims = new int[1];
+            dims[0] = 1;
+            res = zeros<T>(dims,m_nDim);
+        }else{
+            dims = new int[m_nDim-1];
+            int nDim = m_nDim-1;
+            int j = 0;
+            for(int i = 0; i < m_nDim; i++){ // 如果dim=3，Tensor是5维度，则将0124维度赋予dims
+                if(i != dim){
+                    dims[j] = m_dims[i];
+                    j++;
+                }
             }
+            res = zeros<T>(dims,nDim);
         }
-        Tensor<T> res(dims,nDim);
         int* dim_order = new int[m_nDim];
         int i = 0;
         dim_order[m_nDim-1] = dim;
-        for(int j = 0; j < m_nDim; j++){
+        for(int j = 0; j < m_nDim; j++){ // 0,1,2,4,3
             if(j != dim){
                 dim_order[i] = j;
                 i++;
             }
         }
 
-        typename Tensor<T>::_Const_Iterator it(this,dim_order,m_nDim);
-        typename Tensor<T>::_Iterator it_res(&res);
-        while(!it.done()){
-            for(int i = 0;i<m_dims[dim];i++){
-                if(i == 0){
-                    *it_res = *it;
-                }else{
-                    *it_res = std::max(*it_res , *it);
-                }
-                it++;
-            }
-            it_res++;
+        long t_index = m_start_index;
+        long res_index = res.m_start_index;
+        long* res_indices = new long[res.m_nDim];
+        bool done = false;
+        for(int i = 0;i<res.m_nDim;i++){
+            res_indices[i] = 0;
         }
 
+        while(!done){ 
+
+            // 在第一个for循环对压缩掉的那个维度进行操作
+            for(long i = 0;i<m_dims[dim_order[m_nDim-1]];i++){
+                if( i == 0){
+                    res.data_ptr()[res_index] = data_ptr()[t_index];
+                }else{
+                    res.data_ptr()[res_index] = std::max(res.data_ptr()[res_index], data_ptr()[t_index]);
+                }
+                t_index += m_strides[dim_order[m_nDim-1]];
+            }
+ 
+            // 更新坐标的同时根据stride即刻更新index
+            t_index -= m_strides[dim_order[m_nDim-1]]*m_dims[dim_order[m_nDim-1]];
+
+            for(long dim = res.m_nDim-1;dim>=0;dim--){ // dim: 3 2 1 0 
+                if(res_indices[dim] < res.m_dims[dim]-1){ 
+                    res_indices[dim]++;
+                    t_index += this->m_strides[dim_order[dim]];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        done = true;
+                    }
+                    t_index -= this->m_strides[dim_order[dim]]*(res_indices[dim]);
+                    res_index -= res.m_strides[dim]*(res_indices[dim]);
+                    res_indices[dim] = 0;
+                }
+            }
+        }
+
+        delete[] dims;
+        delete[] dim_order;
+        delete[] res_indices;
         return res;
     }
 
     template<typename U>
-    Tensor<U> min(const Tensor<U>& t, int dim){
-        if(dim < 0 || dim >= t.m_nDim){
-            throw std::invalid_argument("Invalid dimension.");
-        }
-        int* dims = new int[t.m_nDim-1];
-        int nDim = t.m_nDim-1;
-        int j = 0;
-        for(int i = 0; i < t.m_nDim; i++){
-            if(i != dim){
-                dims[j] = t.m_dims[i];
-                j++;
-            }
-        }
-        Tensor<U> res(dims,nDim);
-        int* dim_order = new int[t.m_nDim];
-        int i = 0;
-        dim_order[t.m_nDim-1] = dim;
-        for(int j = 0; j < t.m_nDim; j++){
-            if(j != dim){
-                dim_order[i] = j;
-                i++;
-            }
-        }
-
-        typename Tensor<U>::_Const_Iterator it(&t,dim_order,t.m_nDim);
-        typename Tensor<U>::_Iterator it_res(&res);
-        while(!it.done()){
-            for(int i = 0;i<t.m_dims[dim];i++){
-                if(i == 0){
-                    *it_res = *it;
-                }else{
-                    *it_res = std::min(*it_res,*it);
-                }
-                it++;
-            }
-            it_res++;
-        }
-
-        return res;
+    Tensor<U> max(const Tensor<U>& t, int dim){
+        return t.max(dim);
     }
+
     template<typename T>
     Tensor<T> Tensor<T>::min( int dim){
         if(dim < 0 || dim >= m_nDim){
             throw std::invalid_argument("Invalid dimension.");
         }
-        int* dims = new int[m_nDim-1];
-        int nDim = m_nDim-1;
-        int j = 0;
-        for(int i = 0; i < m_nDim; i++){
-            if(i != dim){
-                dims[j] = m_dims[i];
-                j++;
+        int* dims;
+        Tensor<T> res;
+        if( m_nDim == 1){
+            dims = new int[1];
+            dims[0] = 1;
+            res = zeros<T>(dims,m_nDim);
+        }else{
+            dims = new int[m_nDim-1];
+            int nDim = m_nDim-1;
+            int j = 0;
+            for(int i = 0; i < m_nDim; i++){ // 如果dim=3，Tensor是5维度，则将0124维度赋予dims
+                if(i != dim){
+                    dims[j] = m_dims[i];
+                    j++;
+                }
             }
+            res = zeros<T>(dims,nDim);
         }
-        Tensor<T> res(dims,nDim);
         int* dim_order = new int[m_nDim];
         int i = 0;
         dim_order[m_nDim-1] = dim;
-        for(int j = 0; j < m_nDim; j++){
+        for(int j = 0; j < m_nDim; j++){ // 0,1,2,4,3
             if(j != dim){
                 dim_order[i] = j;
                 i++;
             }
         }
 
-        typename Tensor<T>::_Const_Iterator it(this,dim_order,m_nDim);
-        typename Tensor<T>::_Iterator it_res(&res);
-        while(!it.done()){
-            for(int i = 0;i<m_dims[dim];i++){
-                if(i == 0){
-                    *it_res = *it;
-                }else{
-                    std::min(*it_res , *it);
-                }
-                it++;
-            }
-            it_res++;
+        long t_index = m_start_index;
+        long res_index = res.m_start_index;
+        long* res_indices = new long[res.m_nDim];
+        bool done = false;
+        for(int i = 0;i<res.m_nDim;i++){
+            res_indices[i] = 0;
         }
 
+        while(!done){ 
+
+            // 在第一个for循环对压缩掉的那个维度进行操作
+            for(long i = 0;i<m_dims[dim_order[m_nDim-1]];i++){
+                if( i == 0){
+                    res.data_ptr()[res_index] = data_ptr()[t_index];
+                }else{
+                    res.data_ptr()[res_index] = std::min(res.data_ptr()[res_index], data_ptr()[t_index]);
+                }
+                t_index += m_strides[dim_order[m_nDim-1]];
+            }
+ 
+            // 更新坐标的同时根据stride即刻更新index
+            t_index -= m_strides[dim_order[m_nDim-1]]*m_dims[dim_order[m_nDim-1]];
+
+            for(long dim = res.m_nDim-1;dim>=0;dim--){ // dim: 3 2 1 0 
+                if(res_indices[dim] < res.m_dims[dim]-1){ 
+                    res_indices[dim]++;
+                    t_index += this->m_strides[dim_order[dim]];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        done = true;
+                    }
+                    t_index -= this->m_strides[dim_order[dim]]*(res_indices[dim]);
+                    res_index -= res.m_strides[dim]*(res_indices[dim]);
+                    res_indices[dim] = 0;
+                }
+            }
+        }
+
+        delete[] dims;
+        delete[] dim_order;
+        delete[] res_indices;
         return res;
+    }
+
+    template<typename U>
+    Tensor<U> min(const Tensor<U>& t, int dim){
+        return t.min(dim);
     }
 
 }
