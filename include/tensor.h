@@ -6,4 +6,5 @@
 #include "tensor_operation.h"
 #include "tensor_comparison.h"
 #include "einsum.h"
+#include "tensor_serialize.h"
 #endif

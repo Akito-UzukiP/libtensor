@@ -6,7 +6,7 @@
 #include <vector>
 #include <cstdlib>
 #include <ctime>
-
+#include <fstream>
 void testConstructionAndAssignment() {
     ts::Tensor<int> a;
     ts::Tensor<int> b = ts::arange<int>(0, 10).view({2, 5});
@@ -27,11 +27,15 @@ void testElementAccess() {
 }
 
 void testArithmeticOperations() {
-    ts::Tensor<int> a = ts::arange<int>(0, 6).view({2, 3});
+    ts::Tensor<int> a = ts::arange<int>(0, 6).view({2, 3});// [[0,1,2],[3,4,5]]
     ts::Tensor<int> b = ts::arange<int>(0, 6).view({2, 3});
     ts::Tensor<int> c = a + b;
     // 确认加法结果
     assert(c(1, 2) == 10);
+    c = a-b;
+    assert(c(1,2) == 0);
+    c = a*b;
+    assert(c(1,2) == 25);
     // 其他算术操作...
 }
 
@@ -39,101 +43,28 @@ void testMatrixOperations() {
     ts::Tensor<int> a = ts::arange<int>(0, 6).view({2, 3});
     ts::Tensor<int> b = ts::arange<int>(0, 6).view({3, 2});
     ts::Tensor<int> c = a.matmul(b);
-    std::cout<<c<<std::endl;
+    ts::Tensor<int> d = ts::einsum<int>("xy,yz->xz",{a,b});
+    std::cout<<(c == d)<<std::endl;
+    std::cout<<ts::einsum<int>("ij->",{a})<<std::endl;
+    ts::Tensor<double> e = ts::rand<double>({3,4,5});
+    ts::Tensor<double> f = ts::rand<double>({3,4,5}).transpose(1,2);
+    ts::Tensor<double> g = e.matmul(f);
+    ts::Tensor<double> h = ts::einsum<double>("nij,njk->nik",{e,f});
+    ts::Tensor<bool> all_false = ts::full<bool>({3,4,4},false);
+    ts::Tensor<bool> all_true = ts::full<bool>({3,4,4}, true);
+    std::cout<<(g == h) << std::endl;
+    std::cout<<(g >= h) << std::endl;
+    std::cout<<(g > h) << std::endl;
+
+
     // 测试矩阵乘法结果
     // ...
 }
 
-int main() {
-    // srand(time(0));
-    // std::vector<int> shape(5);
-    // for (int i = 0; i < 5; ++i) {
-    //     shape[i] = rand()%50 + 1;
-    //     std::cout<<shape[i]<<std::endl;
-    // }
-
-    // ts::Tensor<double> a = ts::rand<double>(shape);
-    // ts::Tensor<double> b = ts::rand<double>(shape);
-    // ts::Tensor<double> c = ts::zeros<double>(shape);
-    // auto start = std::chrono::high_resolution_clock::now();
-    // typename ts::Tensor<double>::_Const_Iterator iter(a);
-    // typename ts::Tensor<double>::_Const_Iterator iter2(b);
-    // typename ts::Tensor<double>::_Iterator iter3(c);
-    // int i = 0;
-    // for (; !iter.done(); ++iter, ++iter2, ++iter3) {
-    //     *iter3 = *iter * *iter2;
-    //     ++i;
-    // }
-    // std::cout<<i<<std::endl;
-    // auto end = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed2 = end - start;
-    // std::cout << "Time taken by multiplication outside function: " << elapsed2.count() << " s\n";
-    // start = std::chrono::high_resolution_clock::now();
-    // c = a*b;
-    // end = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed = end - start;
-    // std::cout << "Time taken by multiplication: " << elapsed.count() << " s\n";
-    // ts::Tensor<int> a = ts::arange<int>(1, 126).view({5,5,5});
-    // std::cout << a << std::endl;
-    // auto start = std::chrono::high_resolution_clock::now();
-    // std::cout << a.sum(2) << std::endl;
-    // testConstructionAndAssignment();
-    // testElementAccess();
-    // testArithmeticOperations();
-    // testMatrixOperations();
-
-    
-    // std::cout<<a.matmul(b)<<std::endl;
-    // typename ts::Tensor<double>::_Const_Iterator iter(a);
-
-    // iter.reset();
-    // iter2.reset();
-    // iter3.reset();
-    // start = std::chrono::high_resolution_clock::now();
-    // alignas(32) double a1[8];
-    // alignas(32) double b1[8];
-    // alignas(32) double c1[8];
-    // int i = 0;
-    // for (; !iter.done(); ++iter, ++iter2) {
-    //     a1[i] = *iter;
-    //     b1[i] = *iter2;
-    //     ++i;
-    //     if (i == 8) {
-    //         __m256d a2 = _mm256_load_pd(a1);
-    //         __m256d b2 = _mm256_load_pd(b1);
-    //         __m256d c2 = _mm256_mul_pd(a2, b2);
-    //         _mm256_store_pd(c1, c2);
-    //         for (int j = 0; j < 8; ++j) {
-    //             *iter3 = c1[j];
-    //             ++iter3;
-    //         }
-    //         i = 0;
-    //     }
-    // }
-
-    // end = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed3 = end - start;
-    // std::cout << "Time taken by iterator with stride: " << elapsed3.count() << " s\n";
-    // start = std::chrono::high_resolution_clock::now();
-    // double da = 1.23456;
-    // double db = 2.34567;
-    // double dc;
-    // for (int i = 0; i < 2097152; ++i) {
-    //     dc = da * db;
-    // }
-    // end = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed4 = end - start;
-    // std::cout << "Time taken by double: " << elapsed4.count() << " s\n";
-
-    // ts::Tensor<int> test = ts::arange<int>(0, 10).view({2, 5});
-    // std::cout<< test * test <<std::endl;
-
-
-    ts::Tensor<int> a = ts::arange<int>(0,9).view({3,3}); // b,h,w
-    ts::Tensor<int> b = a.permute({1,0});
-    std::cout << a << std::endl;
-    std::cout << b << std::endl;
-    std::cout << ts::matmul(a,b) << std::endl;
-
+int main(){
+    ts::Tensor<int> a = ts::arange<int>(0, 6).view({2, 3}).transpose(0,1);
+    ts::serialize<int>(a, "test.txt");
+    ts::Tensor<int> b = ts::deserialize<int>("test.txt");
+    std::cout<<b<<std::endl;
     return 0;
 }

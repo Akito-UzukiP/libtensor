@@ -28,7 +28,6 @@ namespace ts{
         while(!done){
             rtn.data_ptr()[rtn_index] = data_ptr()[org_index];
             for(long i = m_nDim-1;i>=0;i--){
-                std::cout << i << std::endl;
                 if(indices[i]<m_dims[i]-1){
                     indices[i]++;
                     rtn_index += rtn.m_strides[i];
@@ -68,7 +67,7 @@ namespace ts{
         }
         t.m_nDim = dims.size();
         t.m_dims = new int[t.m_nDim];
-        t.m_strides = new int[t.m_nDim];
+        t.m_strides = new long[t.m_nDim];
         for(int i = 0;i<dims.size();i++){
             t.m_dims[i] = *(dims.begin()+i);
         }
@@ -94,7 +93,7 @@ namespace ts{
         Tensor<T> t = *this;
         t.m_nDim = nDim;
         t.m_dims = new int[t.m_nDim];
-        t.m_strides = new int[t.m_nDim];
+        t.m_strides = new long[t.m_nDim];
         for(int i = 0;i<nDim;i++){
             t.m_dims[i] = dims[i];
         }
@@ -122,7 +121,7 @@ namespace ts{
         Tensor<U> t = org;
         t.m_nDim = dims.size();
         t.m_dims = new int[t.m_nDim];
-        t.m_strides = new int[t.m_nDim];
+        t.m_strides = new long[t.m_nDim];
         for(int i = 0;i<dims.size();i++){
             t.m_dims[i] = *(dims.begin()+i);
         }
@@ -235,7 +234,7 @@ namespace ts{
 
     // Slice操作
     template <typename T>
-    Tensor<T> Tensor<T>::operator()(int dim_index) {
+    Tensor<T> Tensor<T>::operator()(const int dim_index) const {
         if(dim_index >= m_nDim || dim_index < 0){
             throw std::invalid_argument("Slice操作的维度超出张量维度");
         }
@@ -254,7 +253,7 @@ namespace ts{
     }
 
     template <typename T>
-    Tensor<T> Tensor<T>::operator()(int dim_index, std::initializer_list<int> indices){
+    Tensor<T> Tensor<T>::operator()(const int dim_index, const std::initializer_list<int> indices) const{
         if(dim_index >= m_nDim || dim_index < 0){
             throw std::invalid_argument("Slice操作的维度超出张量维度");
         }
@@ -345,7 +344,7 @@ namespace ts{
         // 变化：m_dims少一个，m_nDim减一，m_strides少一个（其余strides不变）
         squeezed_view.m_nDim -= 1;
         int* temp_m_Dims = new int[squeezed_view.m_nDim];
-        int* temp_m_Strides = new int[squeezed_view.m_nDim];
+        long* temp_m_Strides = new long[squeezed_view.m_nDim];
         int j = 0;
         for(int i = 0;i<m_nDim;i++){
             if(i != dim){
@@ -373,7 +372,7 @@ namespace ts{
         // 变化：m_dims少一个，m_nDim减一，m_strides少一个（其余strides不变）
         squeezed_view.m_nDim -= 1;
         int* temp_m_Dims = new int[squeezed_view.m_nDim];
-        int* temp_m_Strides = new int[squeezed_view.m_nDim];
+        long* temp_m_Strides = new long[squeezed_view.m_nDim];
         int j = 0;
         for(int i = 0;i<org.m_nDim;i++){
             if(i != dim){
@@ -400,7 +399,7 @@ namespace ts{
         // 变化：m_dims多一个，m_nDim加一，m_strides多一个（其余strides不变）
         unsqueezed_view.m_nDim += 1;
         int* temp_m_Dims = new int[unsqueezed_view.m_nDim];
-        int* temp_m_Strides = new int[unsqueezed_view.m_nDim];
+        long* temp_m_Strides = new long[unsqueezed_view.m_nDim];
         int j = 0;
         for(int i = 0;i<unsqueezed_view.m_nDim;i++){
             if(i != dim){
@@ -427,7 +426,7 @@ namespace ts{
         // 变化：m_dims多一个，m_nDim加一，m_strides多一个（其余strides不变）
         unsqueezed_view.m_nDim += 1;
         int* temp_m_Dims = new int[unsqueezed_view.m_nDim];
-        int* temp_m_Strides = new int[unsqueezed_view.m_nDim];
+        long* temp_m_Strides = new long[unsqueezed_view.m_nDim];
         int j = 0;
         for(int i = 0;i<unsqueezed_view.m_nDim;i++){
             if(i != dim){
@@ -557,14 +556,12 @@ namespace ts{
     std::vector<int> get_broadcast_shape(const std::vector<Tensor<U>>& tensors){
         std::vector<int> max_shape;
 
-        // Find the shape with the maximum number of dimensions
         for (const auto& tensor : tensors) {
             if (tensor.shape().size() > max_shape.size()) {
                 max_shape = tensor.shape();
             }
         }
 
-        // Compare each tensor's shape with the max shape from the end
         for (const auto& tensor : tensors) {
             std::vector<int> shape = tensor.shape();
             int diff = max_shape.size() - shape.size();
@@ -578,7 +575,6 @@ namespace ts{
                         throw std::invalid_argument("Broadcast操作的张量维度不匹配");
                     }
                 }
-                // Else, this dimension is implicitly 1 for the current tensor
             }
         }
 

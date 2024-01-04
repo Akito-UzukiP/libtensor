@@ -49,7 +49,6 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        std::cout<<rhs<<std::endl;
         long lhs_index = 0;
         long rhs_index = 0;
         long res_index = 0;
@@ -90,7 +89,6 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        std::cout<<rhs<<std::endl;
         long lhs_index = 0;
         long rhs_index = 0;
         long res_index = 0;
@@ -131,7 +129,6 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        std::cout<<rhs<<std::endl;
         long lhs_index = 0;
         long rhs_index = 0;
         long res_index = 0;
@@ -277,17 +274,11 @@ namespace ts{
         Tensor<T> res = zeros<T>({b,m,n});
         long lhs_index = lhs.m_start_index, rhs_index = rhs.m_start_index, res_index = res.m_start_index;
 
-        for(int i = 0;i<3;i++){
-            std::cout << rhs.m_strides[i] << std::endl;
-        }
 
         for(int i = 0; i < b; i++){
             for(int j = 0; j < m; j++){
                 for(int l = 0; l < n; l++){
                     for(int p = 0; p < k; p++){
-                        // std::cout << res_index  << " add: " << lhs.data_ptr()[lhs_index] << " and "<<  rhs.data_ptr()[rhs_index] << std::endl;
-                        // std::cout << lhs_index << " " << rhs_index << std::endl;
-                        // std::cout << " b : " << i << " m : " << j << " n : " << l << " k : " << p << std::endl;
                         res.data_ptr()[res_index] += lhs.data_ptr()[lhs_index] * rhs.data_ptr()[rhs_index];
                         lhs_index += lhs.m_strides[2];
                         rhs_index += rhs.m_strides[1];

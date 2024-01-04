@@ -10,18 +10,19 @@
 #include <typeinfo>
 #include <random>
 #include <memory>
+#include "tensor_type_def.h"
 namespace ts {
     template <typename T>
     class Tensor {
         private:
             int m_nDim; // Dimension count
-            int m_total_size; // Total size of the tensor
+            long m_total_size; // Total size of the tensor
             int*  m_dims; // Dimension sizes
             int m_start_index; // Start index
             //T *m_pData; // Element array,看起来得重写一个data类，提供一些基本的操作，或者干脆就用智能指针接手
             std::shared_ptr<T[]> m_pData;
 
-            int* m_strides; // Strides,
+            long* m_strides; // Strides,
 
         public:
             Tensor();  // Default constructor
@@ -33,15 +34,14 @@ namespace ts {
             Tensor<T>& operator=(const Tensor<T>& t); // Copy assignment operator
             ~Tensor(); // Destructor
             
-            std::string size() const; // Return the size of each dimension
-            std::vector<int> shape() const; // Return the size of each dimension
-            int total_size() const; // Return the total size of the tensor
-            std::string type() const; // Return the type of the elements
-            std::string stride() const; // Return the stride of each dimension
-            T* data_ptr() const; // Return a pointer to the elements
+            std::string size() const; 
+            std::vector<int> shape() const; 
+            int total_size() const; 
+            std::string type() const; 
+            std::string stride() const; 
+            T* data_ptr() const; 
 
-           // inline T& Tensor<T>::getPointerAtIndex(int oneDIndex); // 将一维索引转化为实际多维索引处的引用
-           inline T& getPointerAtIndex(const int* dims); // 将多维数组索引转化为实际多维索引处的引用，保证dims的长度与m_nDim相同
+           inline T& getPointerAtIndex(const int* dims); 
 
             //print方法
 
@@ -49,42 +49,41 @@ namespace ts {
             friend std::ostream & operator<<(std::ostream & os, const Tensor<U> & m);
 
             // 重载运算符
-            T& operator()(std::initializer_list<int> indices);  // 返回指定索引的元素
-            T& operator()(int* indices);  // 返回指定索引的元素，须保证indices的长度与m_nDim相同，否则会出现未定义行为
-            T& operator()(std::vector<int> indices) const;
-            T& operator()(int i , int j, int k); // 返回指定索引的元素，须保证m_nDim为3，否则会出现未定义行为
-            T& operator()(int i , int j); // 返回指定索引的元素，须保证m_nDim为2，否则会出现未定义行为
-            Tensor<T> operator()(int dim_index);  // 返回指定维度(n-1维)
-            Tensor<T> operator()(int dim_index, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
-          //  Tensor<T> operator()(std::initializer_list<int> dim_target, std::initializer_list<int> indices); // 返回指定维度的指定索引的切片
+            T& operator()(const std::initializer_list<int> indices) const;  
+            T& operator()(const int* indices) const;  
+            T& operator()(const std::vector<int> indices) const;
+            T& operator()(const int i , const int j, const int k) const; 
+            T& operator()(const int i , const int j) const; 
+            Tensor<T> operator()(const int dim_index) const;  
+            Tensor<T> operator()(const int dim_index, const std::initializer_list<int> indices) const; 
+
             // Contiguous操作 
             // 检测是否连续
             bool is_contiguous() const;
             // 返回内存连续化的版本
             Tensor<T> contiguous() const;
-            // View操作
-            Tensor<T> view(const std::initializer_list<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
-            //Tensor<T> view(const std::vector<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
-            Tensor<T> view(const int* dims, const int nDim) const; // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            // View操作，如果内存连续则共享原内存，若内存不连续则重排后新建内存
+            Tensor<T> view(const std::initializer_list<int>& dims) const; 
+            Tensor<T> view(const int* dims, const int nDim) const; 
             template <typename U>
-            friend Tensor<U> view(const Tensor<U>& org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            friend Tensor<U> view(const Tensor<U>& org, const std::initializer_list<int>& dims);
 
             // Transpose操作
-            Tensor<T> transpose(const int dim1, const int dim2) const; // 返回一个新的张量，该张量与原张量共享数据，但stride和dims被交换
+            Tensor<T> transpose(const int dim1, const int dim2) const; 
             template <typename U>
-            friend Tensor<U> transpose(const Tensor<U>& org, const int dim1, const int dim2); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            friend Tensor<U> transpose(const Tensor<U>& org, const int dim1, const int dim2); 
             
             // Permute操作
-            Tensor<T> permute(const std::initializer_list<int>& dims) const; // 返回一个新的张量，该张量与原张量共享数据，但维度顺序不同
+            Tensor<T> permute(const std::initializer_list<int>& dims) const; 
             template <typename U>
-            friend Tensor<U> permute(const Tensor<U>& org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但维度顺序不同
+            friend Tensor<U> permute(const Tensor<U>& org, const std::initializer_list<int>& dims); 
             // Slice操作
             // TODO 在上面的operator()中实现
 
             // Concat操作
             // TODO
             template <typename U>
-            friend Tensor<U> concat(const Tensor<U>& t1, const Tensor<U>& t2, const int axis); // 返回一个新的张量，且是t1和t2在axis维度上的拼接，并且新创建内存空间
+            friend Tensor<U> concat(const Tensor<U>& t1, const Tensor<U>& t2, const int axis); 
 
             // tile操作
             template <typename U>
@@ -99,15 +98,15 @@ namespace ts {
 
             // BroadCast操作
             template <typename U>
-            friend std::vector<int> get_broadcast_shape(const std::vector<Tensor<U>>& tensors); // 计算两个张量的广播形状
+            friend std::vector<int> get_broadcast_shape(const std::vector<Tensor<U>>& tensors); 
             template <typename U>
-            friend std::vector<int> get_broadcast_shape(const std::initializer_list<Tensor<U>>& tensors); // 计算两个张量的广播形状
+            friend std::vector<int> get_broadcast_shape(const std::initializer_list<Tensor<U>>& tensors); 
             template <typename U>
-            friend Tensor<U> broadcast(const Tensor<U>& org, const std::initializer_list<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            friend Tensor<U> broadcast(const Tensor<U>& org, const std::initializer_list<int>& dims); 
             template <typename U>
-            friend Tensor<U> broadcast(const Tensor<U>& org, const int* dims, const int nDim); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            friend Tensor<U> broadcast(const Tensor<U>& org, const int* dims, const int nDim); 
             template <typename U>
-            friend Tensor<U> broadcast(const Tensor<U>& org, const std::vector<int>& dims); // 返回一个新的张量，该张量与原张量共享数据，但形状不同
+            friend Tensor<U> broadcast(const Tensor<U>& org, const std::vector<int>& dims); 
 
             // Mutate操作
             // TODO
@@ -115,82 +114,89 @@ namespace ts {
 
 
             // Squeeze和Unsqueeze操作
-            Tensor<T> squeeze(const int dim) const; // 返回一个新的张量，该张量与原张量共享数据，但在dim维度上的大小为1的维度被删除
+            Tensor<T> squeeze(const int dim) const; 
             template <typename U>
-            friend Tensor<U> squeeze(const Tensor<U>& org, const int dim); // 返回一个新的张量，该张量与原张量共享数据，但在dim维度上的大小为1的维度被删除
+            friend Tensor<U> squeeze(const Tensor<U>& org, const int dim); 
 
-            Tensor<T> unsqueeze(const int dim) const; // 返回一个新的张量，该张量与原张量共享数据，但在dim维度上增加一个大小为1的维度
+            Tensor<T> unsqueeze(const int dim) const; 
             template <typename U>
-            friend Tensor<U> unsqueeze(const Tensor<U>& org, const int dim); // 返回一个新的张量，该张量与原张量共享数据，但在dim维度上增加一个大小为1的维度
+            friend Tensor<U> unsqueeze(const Tensor<U>& org, const int dim); 
 
 
             template <typename U>
-            friend Tensor<U> operator+(const Tensor<U>& t1, const Tensor<U>& t2); // 张量加法
+            friend Tensor<U> operator+(const Tensor<U>& t1, const Tensor<U>& t2); 
             template <typename U>
-            friend Tensor<U> operator-(const Tensor<U>& t1, const Tensor<U>& t2); // 张量减法
+            friend Tensor<U> operator-(const Tensor<U>& t1, const Tensor<U>& t2); 
             template <typename U>
-            friend Tensor<U> operator*(const Tensor<U>& t1, const Tensor<U>& t2); // 张量乘法
+            friend Tensor<U> operator*(const Tensor<U>& t1, const Tensor<U>& t2); 
             template <typename U>
-            friend Tensor<U> operator/(const Tensor<U>& t1, const Tensor<U>& t2); // 张量除法
+            friend Tensor<U> operator/(const Tensor<U>& t1, const Tensor<U>& t2); 
             template <typename U>
-            friend Tensor<U> log(const Tensor<U>& lhs); // 张量取对数
+            friend Tensor<U> log(const Tensor<U>& lhs); 
 
-            Tensor<T> add(const Tensor<T>& t) const; // 张量加法
+            Tensor<T> add(const Tensor<T>& t) const; 
             template <typename U>
-            friend Tensor<U> add(const Tensor<U>& t1, const Tensor<U>& t2); // 张量加法
-            Tensor<T> sub(const Tensor<T>& t) const; // 张量减法
+            friend Tensor<U> add(const Tensor<U>& t1, const Tensor<U>& t2); 
+            Tensor<T> sub(const Tensor<T>& t) const; 
             template <typename U>
-            friend Tensor<U> sub(const Tensor<U>& t1, const Tensor<U>& t2); // 张量减法
-            Tensor<T> mul(const Tensor<T>& t) const; // 张量乘法
+            friend Tensor<U> sub(const Tensor<U>& t1, const Tensor<U>& t2); 
+            Tensor<T> mul(const Tensor<T>& t) const; 
             template <typename U>
-            friend Tensor<U> mul(const Tensor<U>& t1, const Tensor<U>& t2); // 张量乘法
-            Tensor<T> div(const Tensor<T>& t) const; // 张量除法
+            friend Tensor<U> mul(const Tensor<U>& t1, const Tensor<U>& t2); 
+            Tensor<T> div(const Tensor<T>& t) const; 
             template <typename U>
-            friend Tensor<U> div(const Tensor<U>& t1, const Tensor<U>& t2); // 张量除法
+            friend Tensor<U> div(const Tensor<U>& t1, const Tensor<U>& t2); 
 
-            // 矩阵乘法
-            Tensor<T> matmul(const Tensor<T>& t) const; // 矩阵乘法
+            
+            Tensor<T> matmul(const Tensor<T>& t) const; 
             template <typename U>
-            friend Tensor<U> matmul(const Tensor<U>& t1, const Tensor<U>& t2); // 矩阵乘法
+            friend Tensor<U> matmul(const Tensor<U>& t1, const Tensor<U>& t2); 
 
             // 基础的reduction计算
-            Tensor<T> sum(const int dim); // 按照指定维度求和
+            Tensor<T> sum(const int dim);
             template <typename U>
-            friend Tensor<U> sum(const Tensor<U>& t, const int dim); // 按照指定维度求和
-            Tensor<T> mean(const int dim); // 按照指定维度求平均
+            friend Tensor<U> sum(const Tensor<U>& t, const int dim);
+            Tensor<T> mean(const int dim); 
             template <typename U>
-            friend Tensor<U> mean(const Tensor<U>& t, const int dim); // 按照指定维度求平均
-            Tensor<T> max(const int dim); // 按照指定维度求最大值
+            friend Tensor<U> mean(const Tensor<U>& t, const int dim); 
+            Tensor<T> max(const int dim);
             template <typename U>
-            friend Tensor<U> max(const Tensor<U>& t, const int dim); // 按照指定维度求最大值
-            Tensor<T> min(const int dim); // 按照指定维度求最小值
+            friend Tensor<U> max(const Tensor<U>& t, const int dim);
+            Tensor<T> min(const int dim);
             template <typename U>
-            friend Tensor<U> min(const Tensor<U>& t, const int dim); // 按照指定维度求最小值
+            friend Tensor<U> min(const Tensor<U>& t, const int dim);
             //比较，有: gt ge lt le eq ne
-            Tensor<bool> gt(const Tensor<T>& t); // 大于
+            Tensor<bool> gt(const Tensor<T>& t);
             template <typename U>
-            friend Tensor<bool> gt(const Tensor<U>& t1, const Tensor<U>& t2); // 大于
-            Tensor<bool> operator>(const Tensor<T>& t); // 等于
-            Tensor<bool> ge(const Tensor<T>& t); // 大于等于
+            friend Tensor<bool> gt(const Tensor<U>& t1, const Tensor<U>& t2);
+            Tensor<bool> operator>(const Tensor<T>& t); 
+            Tensor<bool> ge(const Tensor<T>& t);
             template <typename U>
-            friend Tensor<bool> ge(const Tensor<U>& t1, const Tensor<U>& t2); // 大于等于
-            Tensor<bool> operator>=(const Tensor<T>& t); // 等于
-            Tensor<bool> lt(const Tensor<T>& t); // 小于
+            friend Tensor<bool> ge(const Tensor<U>& t1, const Tensor<U>& t2);
+            Tensor<bool> operator>=(const Tensor<T>& t); 
+            Tensor<bool> lt(const Tensor<T>& t); 
             template <typename U>
-            friend Tensor<bool> lt(const Tensor<U>& t1, const Tensor<U>& t2); // 小于
-            Tensor<bool> operator<(const Tensor<T>& t); // 等于
-            Tensor<bool> le(const Tensor<T>& t); // 小于等于
+            friend Tensor<bool> lt(const Tensor<U>& t1, const Tensor<U>& t2); 
+            Tensor<bool> operator<(const Tensor<T>& t); 
+            Tensor<bool> le(const Tensor<T>& t);
             template <typename U>
-            friend Tensor<bool> le(const Tensor<U>& t1, const Tensor<U>& t2); // 小于等于
-            Tensor<bool> operator<=(const Tensor<T>& t); // 等于
-            Tensor<bool> eq(const Tensor<T>& t); // 等于
+            friend Tensor<bool> le(const Tensor<U>& t1, const Tensor<U>& t2);
+            Tensor<bool> operator<=(const Tensor<T>& t); 
+            Tensor<bool> eq(const Tensor<T>& t); 
             template <typename U>
-            friend Tensor<bool> eq(const Tensor<U>& t1, const Tensor<U>& t2); // 等于
-            Tensor<bool> operator==(const Tensor<T>& t); // 等于
-            Tensor<bool> ne(const Tensor<T>& t); // 不等于
+            friend Tensor<bool> eq(const Tensor<U>& t1, const Tensor<U>& t2); 
+            Tensor<bool> operator==(const Tensor<T>& t); 
+            Tensor<bool> ne(const Tensor<T>& t); 
             template <typename U>
-            friend Tensor<bool> ne(const Tensor<U>& t1, const Tensor<U>& t2); // 不等于
-            Tensor<bool> operator!=(const Tensor<T>& t); // 不等于
+            friend Tensor<bool> ne(const Tensor<U>& t1, const Tensor<U>& t2); 
+            Tensor<bool> operator!=(const Tensor<T>& t); 
+
+            void serialize(const std::string& filename) const;
+            template <typename U>
+            friend void serialize(const Tensor<U>& tensor, const std::string& filename);
+
+            static Tensor<T> deserialize(const std::string& filename);
+
 
             class _Iterator;
             class _Const_Iterator;
@@ -214,7 +220,7 @@ namespace ts {
         m_nDim = nDim;
         m_total_size = 1;
         m_dims = new int[m_nDim];
-        m_strides = new int[m_nDim];
+        m_strides = new long[m_nDim];
         m_start_index = 0;
         for(int i = 0;i<nDim;i++){
             m_dims[i] = dims[i];
@@ -235,7 +241,7 @@ namespace ts {
         m_nDim = dims.size();
         m_total_size = 1;
         m_dims = new int[m_nDim];
-        m_strides = new int[m_nDim];
+        m_strides = new long[m_nDim];
         m_start_index = 0;
         for(int i = 0;i<dims.size();i++){
             m_dims[i] = dims[i];
@@ -256,7 +262,7 @@ namespace ts {
         m_nDim = dims.size();
         m_total_size = 1;
         m_dims = new int[m_nDim];
-        m_strides = new int[m_nDim];
+        m_strides = new long[m_nDim];
         m_start_index = 0;
         for(int i = 0;i<dims.size();i++){
             m_dims[i] = *(dims.begin()+i);
@@ -279,7 +285,7 @@ namespace ts {
         m_nDim = nDim;
         m_total_size = 1;
         m_dims = new int[m_nDim];
-        m_strides = new int[m_nDim];
+        m_strides = new long[m_nDim];
         m_start_index = 0;
         for(int i = 0;i<nDim;i++){
             m_dims[i] = dims[i];
@@ -304,7 +310,7 @@ namespace ts {
         m_nDim = other.m_nDim;
         m_total_size = other.m_total_size;
         m_dims = new int[m_nDim];
-        m_strides = new int[m_nDim];
+        m_strides = new long[m_nDim];
         m_start_index = other.m_start_index;
         for(int i = 0;i<m_nDim;i++){
             m_dims[i] = other.m_dims[i];
@@ -329,7 +335,7 @@ namespace ts {
         m_nDim = other.m_nDim;
         m_total_size = other.m_total_size;
         m_dims = new int[m_nDim];
-        m_strides = new int[m_nDim];
+        m_strides = new long[m_nDim];
         m_start_index = other.m_start_index;
         for(int i = 0;i<m_nDim;i++){
             m_dims[i] = other.m_dims[i];
@@ -679,7 +685,7 @@ namespace ts {
     }
 
     template <typename T>
-    T& Tensor<T>::operator()(std::initializer_list<int> indices){
+    T& Tensor<T>::operator()(const std::initializer_list<int> indices) const{
         int index = m_start_index;
         for(int i = 0;i<m_nDim;i++){
             index += *(indices.begin()+i)*m_strides[i];
@@ -688,7 +694,7 @@ namespace ts {
     }
 
     template <typename T>
-    T& Tensor<T>::operator()(int* indices){
+    T& Tensor<T>::operator()(const int* indices) const{
         int index = m_start_index;
         for(int i = 0;i<m_nDim;i++){
             index += *(indices+i)*m_strides[i];
@@ -697,7 +703,7 @@ namespace ts {
     }
 
     template <typename T>
-    T& Tensor<T>::operator()(std::vector<int> indices) const{
+    T& Tensor<T>::operator()(const std::vector<int> indices) const{
         int index = m_start_index;
         for(int i = 0;i<m_nDim;i++){
             index += indices[i]*m_strides[i];
@@ -706,7 +712,7 @@ namespace ts {
     }
 
     template <typename T>
-    T& Tensor<T>::operator()(int i, int j, int k){
+    T& Tensor<T>::operator()(const int i, const int j, const int k) const{
         if(m_nDim != 3){
             throw std::invalid_argument("Dimensions of lhs must be 3.");
         }
@@ -718,7 +724,7 @@ namespace ts {
     }
 
     template <typename T>
-    T& Tensor<T>::operator()(int i, int j){
+    T& Tensor<T>::operator()(const int i, const int j) const{
         if(m_nDim != 2){
             throw std::invalid_argument("Dimensions of lhs must be 2.");
         }
