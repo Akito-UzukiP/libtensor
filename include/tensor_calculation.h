@@ -1,9 +1,10 @@
 #ifndef TS_TENSOR_CALCULATION_H
 #define TS_TENSOR_CALCULATION_H
-#include "tensor.h"
+#include "tensor_basic.h"
 #include "tensor_operation.h"
 #include <chrono>
 namespace ts{
+
 
     template<typename U>
     Tensor<U> operator+(const Tensor<U>& lhs, const Tensor<U>& rhs){
@@ -11,36 +12,7 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        long lhs_index = 0;
-        long rhs_index = 0;
-        long res_index = 0;
-        long* _indices = new long[lhs_.m_nDim];
-        for(int i = 0;i<lhs_.m_nDim;i++){
-            _indices[i] = 0;
-        }
-        // 按照_dim_order更新索引
-        bool _done = false;
-        while(!_done){
-            res.data_ptr()[res_index] = lhs_.data_ptr()[lhs_index] + rhs_.data_ptr()[rhs_index];
-            for(long dim = lhs_.m_nDim-1;dim>=0;dim--){
-                if(_indices[dim] < lhs_.m_dims[dim]-1){ 
-                    _indices[dim]++;
-                    lhs_index += lhs_.m_strides[dim];
-                    rhs_index += rhs_.m_strides[dim];
-                    res_index += res.m_strides[dim];
-                    break;
-                }else{
-                    if(dim == 0){
-                        _done = true;
-                    }
-                    lhs_index -= lhs_.m_strides[dim]*(_indices[dim]);
-                    rhs_index -= rhs_.m_strides[dim]*(_indices[dim]);
-                    res_index -= res.m_strides[dim]*(_indices[dim]);
-                    _indices[dim] = 0;
-                }
-            }
-        }
-        delete[] _indices;
+        binary_elementwise_operation<U>(lhs, rhs, res, [](U a, U b){return a+b;});
         return res;
     }
     template<typename U>
@@ -49,37 +21,7 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        long lhs_index = 0;
-        long rhs_index = 0;
-        long res_index = 0;
-        long* _indices = new long[lhs_.m_nDim];
-        for(int i = 0;i<lhs_.m_nDim;i++){
-            _indices[i] = 0;
-        }
-        // 按照_dim_order更新索引
-        bool _done = false;
-        while(!_done){
-            res.data_ptr()[res_index] = lhs_.data_ptr()[lhs_index] - rhs_.data_ptr()[rhs_index];
-            for(long dim = lhs_.m_nDim-1;dim>=0;dim--){
-                if(_indices[dim] < lhs_.m_dims[dim]-1){ 
-                    _indices[dim]++;
-                    lhs_index += lhs_.m_strides[dim];
-                    rhs_index += rhs_.m_strides[dim];
-                    res_index += res.m_strides[dim];
-                    break;
-                }else{
-                    if(dim == 0){
-                        _done = true;
-                    }
-                    lhs_index -= lhs_.m_strides[dim]*(_indices[dim]);
-                    rhs_index -= rhs_.m_strides[dim]*(_indices[dim]);
-                    res_index -= res.m_strides[dim]*(_indices[dim]);
-                    _indices[dim] = 0;
-                }
-            }
-        }
-        delete[] _indices;
-
+        binary_elementwise_operation<U>(lhs, rhs, res, [](U a, U b){return a-b;});
         return res;
     }
 
@@ -89,39 +31,9 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        long lhs_index = 0;
-        long rhs_index = 0;
-        long res_index = 0;
-        long* _indices = new long[lhs_.m_nDim];
-        for(int i = 0;i<lhs_.m_nDim;i++){
-            _indices[i] = 0;
-        }
-        // 按照_dim_order更新索引
-        bool _done = false;
-        while(!_done){
-            res.data_ptr()[res_index] = lhs_.data_ptr()[lhs_index] * rhs_.data_ptr()[rhs_index];
-            for(long dim = lhs_.m_nDim-1;dim>=0;dim--){
-                if(_indices[dim] < lhs_.m_dims[dim]-1){ 
-                    _indices[dim]++;
-                    lhs_index += lhs_.m_strides[dim];
-                    rhs_index += rhs_.m_strides[dim];
-                    res_index += res.m_strides[dim];
-                    break;
-                }else{
-                    if(dim == 0){
-                        _done = true;
-                    }
-                    lhs_index -= lhs_.m_strides[dim]*(_indices[dim]);
-                    rhs_index -= rhs_.m_strides[dim]*(_indices[dim]);
-                    res_index -= res.m_strides[dim]*(_indices[dim]);
-                    _indices[dim] = 0;
-                }
-            }
-        }
-        delete[] _indices;
+        binary_elementwise_operation<U>(lhs, rhs, res, [](U a, U b){return a*b;});
         return res;
     }
-
 
     template<typename U>
     Tensor<U> operator/(const Tensor<U>& lhs, const Tensor<U>& rhs){
@@ -129,36 +41,7 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        long lhs_index = 0;
-        long rhs_index = 0;
-        long res_index = 0;
-        long* _indices = new long[lhs_.m_nDim];
-        for(int i = 0;i<lhs_.m_nDim;i++){
-            _indices[i] = 0;
-        }
-        // 按照_dim_order更新索引
-        bool _done = false;
-        while(!_done){
-            res.data_ptr()[res_index] = lhs_.data_ptr()[lhs_index] / rhs_.data_ptr()[rhs_index];
-            for(long dim = lhs_.m_nDim-1;dim>=0;dim--){
-                if(_indices[dim] < lhs_.m_dims[dim]-1){ 
-                    _indices[dim]++;
-                    lhs_index += lhs_.m_strides[dim];
-                    rhs_index += rhs_.m_strides[dim];
-                    res_index += res.m_strides[dim];
-                    break;
-                }else{
-                    if(dim == 0){
-                        _done = true;
-                    }
-                    lhs_index -= lhs_.m_strides[dim]*(_indices[dim]);
-                    rhs_index -= rhs_.m_strides[dim]*(_indices[dim]);
-                    res_index -= res.m_strides[dim]*(_indices[dim]);
-                    _indices[dim] = 0;
-                }
-            }
-        }
-        delete[] _indices;
+        binary_elementwise_operation<U>(lhs, rhs, res, [](U a, U b){return a/b;});
         return res;
     }
 

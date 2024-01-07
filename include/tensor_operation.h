@@ -5,6 +5,77 @@
 
 namespace ts{
 
+
+
+    template <typename U, typename Func>
+    void unary_elementwise_operation(const Tensor<U>& src, Tensor<U>& res,  Func func){
+        long src_index = 0;
+        long res_index = 0;
+        long* _indices = new long[src.m_nDim];
+        bool done = false;
+        for(int i = 0;i<src.m_nDim;i++){
+            _indices[i] = 0;
+        }
+        while(!done){
+            res.data_ptr()[res_index] = func(src.data_ptr()[src_index]);
+            for(long dim = src.m_nDim-1;dim>=0;dim--){
+                if(_indices[dim] < src.m_dims[dim]-1){ 
+                    _indices[dim]++;
+                    src_index += src.m_strides[dim];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        done = true;
+                    }
+                    src_index -= src.m_strides[dim]*(_indices[dim]);
+                    res_index -= res.m_strides[dim]*(_indices[dim]);
+                    _indices[dim] = 0;
+                }
+            }
+        }
+        delete[] _indices;
+
+
+    }
+
+    template <typename U, typename Func>
+    void binary_elementwise_operation(const Tensor<U>& lhs, const Tensor<U>& rhs, Tensor<U>& res, Func func){
+        long lhs_index = 0;
+        long rhs_index = 0;
+        long res_index = 0;
+        long* _indices = new long[lhs.m_nDim];
+        bool done = false;
+        for(int i = 0;i<lhs.m_nDim;i++){
+            _indices[i] = 0;
+        }
+        while(!done){
+            res.data_ptr()[res_index] = func(lhs.data_ptr()[lhs_index],rhs.data_ptr()[rhs_index]);
+            for(long dim = lhs.m_nDim-1;dim>=0;dim--){
+                if(_indices[dim] < lhs.m_dims[dim]-1){ 
+                    _indices[dim]++;
+                    lhs_index += lhs.m_strides[dim];
+                    rhs_index += rhs.m_strides[dim];
+                    res_index += res.m_strides[dim];
+                    break;
+                }else{
+                    if(dim == 0){
+                        done = true;
+                    }
+                    lhs_index -= lhs.m_strides[dim]*(_indices[dim]);
+                    rhs_index -= rhs.m_strides[dim]*(_indices[dim]);
+                    res_index -= res.m_strides[dim]*(_indices[dim]);
+                    _indices[dim] = 0;
+                }
+            }
+        }
+        delete[] _indices;
+
+
+    }
+
+
+
     template <typename T>
     bool Tensor<T>::is_contiguous() const{
         int c_stride = 1;

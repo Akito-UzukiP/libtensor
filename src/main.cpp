@@ -33,6 +33,7 @@ void testArithmeticOperations() {
     // 确认加法结果
     assert(c(1, 2) == 10);
     c = a-b;
+    std::cout << c << std::endl;
     assert(c(1,2) == 0);
     c = a*b;
     assert(c(1,2) == 25);
@@ -61,10 +62,17 @@ void testMatrixOperations() {
     // ...
 }
 
+void testOnProjectPage(){
+    ts::Tensor<double> t = ts::Tensor<double>({0.1,1.2,2.2,3.1,4.9,5.2}, {2,3});
+    std::cout << t.size() << std::endl << t.type() << std::endl << t.data_ptr() << std::endl;
+
+}
+
 int main(){
     ts::Tensor<int> a = ts::arange<int>(0, 6).view({2, 3}).transpose(0,1);
     ts::serialize<int>(a, "test.txt");
     ts::Tensor<int> b = ts::deserialize<int>("test.txt");
-    std::cout<<b<<std::endl;
+    std::cout<<b+b<<std::endl;
+    testArithmeticOperations();
     return 0;
 }

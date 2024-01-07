@@ -30,6 +30,7 @@ namespace ts {
             Tensor(const std::vector<int>& dims); // Constructor
             Tensor(T* pData, const std::initializer_list<int>& dims); // Constructor
             Tensor(T* pData, const int* dims, const int nDim); // Hard Copy Constructor
+            Tensor(std::initializer_list<T> l, std::initializer_list<int> dims); // Constructor
             Tensor(const Tensor<T>& t, bool shallow_copy = true); // Shallow Copy constructor
             Tensor<T>& operator=(const Tensor<T>& t); // Copy assignment operator
             ~Tensor(); // Destructor
@@ -42,6 +43,13 @@ namespace ts {
             T* data_ptr() const; 
 
            inline T& getPointerAtIndex(const int* dims); 
+
+           // elementwise操作
+           template <typename U, typename Func>
+           friend void unary_elementwise_operation(const Tensor<U>& src, Tensor<U>& res, Func func);
+
+           template <typename U, typename Func>
+           friend void binary_elementwise_operation(const Tensor<U>& lhs, const Tensor<U>& rhs, Tensor<U>& res, Func func);
 
             //print方法
 
@@ -195,6 +203,7 @@ namespace ts {
             template <typename U>
             friend void serialize(const Tensor<U>& tensor, const std::string& filename);
 
+
             static Tensor<T> deserialize(const std::string& filename);
 
 
@@ -304,6 +313,18 @@ namespace ts {
         }
     }
 
+    template <typename T>
+    Tensor<T>::Tensor(std::initializer_list<T> l, std::initializer_list<int> dims){
+        Tensor<T> t = Tensor<T>(dims);
+        T* data_ptr = t.m_pData.get();
+        int i = 0;
+        for(auto it = l.begin();it != l.end();it++){
+            data_ptr[i] = *it;
+            i++;
+        }
+    }
+
+
     // Shallow Copy constructor
     template <typename T> 
     Tensor<T>::Tensor(const Tensor<T>& other, bool shallow_copy){
@@ -334,6 +355,12 @@ namespace ts {
         }
         m_nDim = other.m_nDim;
         m_total_size = other.m_total_size;
+        if(m_dims != nullptr){
+            delete[] m_dims;
+        }
+        if(m_strides != nullptr){
+            delete[] m_strides;
+        }
         m_dims = new int[m_nDim];
         m_strides = new long[m_nDim];
         m_start_index = other.m_start_index;
@@ -661,9 +688,7 @@ namespace ts {
             total_size *= dim[i];
         }
         T* data = new T[total_size];
-        for(int i = 0;i<total_size;i++){
-            data[i] = value;
-        }
+        std::fill(data, data + total_size, value);  // 使用 std::fill 替代循环
         Tensor<T> t = Tensor<T>(data,dims);
         delete[] data;
         delete[] dim;
