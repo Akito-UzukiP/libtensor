@@ -30,7 +30,7 @@ namespace ts{
 
 
     template<typename T>
-    Tensor<bool> Tensor<T>::gt(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::gt(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -71,7 +71,7 @@ namespace ts{
         return res;
     }
     template<typename T>
-    Tensor<bool> Tensor<T>::operator>(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::operator>(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -95,7 +95,7 @@ namespace ts{
     }
 
     template<typename T>
-    Tensor<bool> Tensor<T>::ge(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::ge(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -136,7 +136,7 @@ namespace ts{
         return res;
     }
     template<typename T>
-    Tensor<bool> Tensor<T>::operator>=(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::operator>=(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -160,7 +160,7 @@ namespace ts{
     }
 
     template<typename T>
-    Tensor<bool> Tensor<T>::lt(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::lt(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -201,7 +201,7 @@ namespace ts{
         return res;
     }
     template<typename T>
-    Tensor<bool> Tensor<T>::operator<(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::operator<(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -225,7 +225,7 @@ namespace ts{
     }
 
     template<typename T>
-    Tensor<bool> Tensor<T>::le(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::le(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -266,7 +266,7 @@ namespace ts{
         return res;
     }
     template<typename T>
-    Tensor<bool> Tensor<T>::operator<=(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::operator<=(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -290,7 +290,7 @@ namespace ts{
     }
 
     template<typename T>
-    Tensor<bool> Tensor<T>::eq(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::eq(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -331,7 +331,7 @@ namespace ts{
         return res;
     }
     template<typename T>
-    Tensor<bool> Tensor<T>::operator==(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::operator==(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -355,7 +355,7 @@ namespace ts{
     }
 
     template<typename T>
-    Tensor<bool> Tensor<T>::ne(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::ne(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }
@@ -396,7 +396,7 @@ namespace ts{
         return res;
     }
     template<typename T>
-    Tensor<bool> Tensor<T>::operator!=(const Tensor<T>& t){
+    Tensor<bool> Tensor<T>::operator!=(const Tensor<T>& t) const{
         if(m_nDim != t.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
         }

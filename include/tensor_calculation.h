@@ -45,6 +45,37 @@ namespace ts{
         return res;
     }
 
+    template<typename U, typename V>
+    Tensor<U> operator+(const Tensor<U>& lhs, const V& rhs){
+        Tensor<U> res(lhs.shape());
+        unary_elementwise_operation(lhs, res, [rhs](U a){return a+rhs;});
+        return res;
+    }
+
+    template<typename U, typename V>
+    Tensor<U> operator-(const Tensor<U>& lhs, const V& rhs){
+        Tensor<U> res(lhs.shape());
+        unary_elementwise_operation(lhs, res, [rhs](U a){return a-rhs;});
+        return res;
+    }
+
+    template<typename U, typename V>
+    Tensor<U> operator*(const Tensor<U>& lhs, const V& rhs){
+        Tensor<U> res(lhs.shape());
+        unary_elementwise_operation(lhs, res, [rhs](U a){return a*rhs;});
+        return res;
+    }
+
+    template<typename U, typename V>
+    Tensor<U> operator/(const Tensor<U>& lhs, const V& rhs){
+        Tensor<U> res(lhs.shape());
+        unary_elementwise_operation(lhs, res, [rhs](U a){return a/rhs;});
+        return res;
+    }
+
+
+
+
     template<typename U>
     Tensor<U> log(const Tensor<U>& t){
         Tensor<U> res(t,false);
@@ -121,6 +152,53 @@ namespace ts{
         return t1 / t2;
     }
 
+    template<typename T>
+    template<typename V>
+    Tensor<T> Tensor<T>::add(const V& v) const{
+        return *this + v;
+    }
+
+    template<typename T, typename V>
+    Tensor<T> add(const Tensor<T>& t, const V& v){
+        return t + v;
+    }
+
+    template<typename T>
+    template<typename V>
+    Tensor<T> Tensor<T>::sub(const V& v) const{
+        return *this - v;
+    }
+
+    template<typename T, typename V>
+    Tensor<T> sub(const Tensor<T>& t, const V& v){
+        return t - v;
+    }
+
+    template<typename T>
+    template<typename V>
+    Tensor<T> Tensor<T>::mul(const V& v) const{
+        return *this * v;
+    }
+
+    template<typename T, typename V>
+    Tensor<T> mul(const Tensor<T>& t, const V& v){
+        return t * v;
+    }
+
+    template<typename T>
+    template<typename V>
+    Tensor<T> Tensor<T>::div(const V& v) const{
+        return *this / v;
+    }
+
+    template<typename T, typename V>
+    Tensor<T> div(const Tensor<T>& t, const V& v){
+        return t / v;
+    }
+
+
+
+
 
     template<typename T>
     Tensor<T> Tensor<T>::matmul(const Tensor<T>& t) const{
@@ -192,7 +270,7 @@ namespace ts{
     }
 
     template<typename T>
-    Tensor<T> Tensor<T>::sum( int dim){
+    Tensor<T> Tensor<T>::sum( int dim) const{
         if(dim < 0 || dim >= m_nDim){
             throw std::invalid_argument("Invalid dimension.");
         }
@@ -271,7 +349,7 @@ namespace ts{
         return t.sum(dim);
     }
     template<typename T>
-    Tensor<T> Tensor<T>::mean( int dim){
+    Tensor<T> Tensor<T>::mean( int dim) const{
         if(dim < 0 || dim >= m_nDim){
             throw std::invalid_argument("Invalid dimension.");
         }
@@ -353,7 +431,7 @@ namespace ts{
     }    
 
     template<typename T>
-    Tensor<T> Tensor<T>::max( int dim){
+    Tensor<T> Tensor<T>::max( int dim) const{
         if(dim < 0 || dim >= m_nDim){
             throw std::invalid_argument("Invalid dimension.");
         }
@@ -437,7 +515,7 @@ namespace ts{
     }
 
     template<typename T>
-    Tensor<T> Tensor<T>::min( int dim){
+    Tensor<T> Tensor<T>::min( int dim) const{
         if(dim < 0 || dim >= m_nDim){
             throw std::invalid_argument("Invalid dimension.");
         }

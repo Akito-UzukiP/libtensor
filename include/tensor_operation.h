@@ -300,20 +300,47 @@ namespace ts{
 
         return *this;
     }
+    template <typename T>
+    template <typename U>
+    Tensor<T>& Tensor<T>::operator=(U value){
+        std::vector<int> indices(m_nDim, 0); // 初始化索引向量
+        bool done = false;
 
+        while (!done) {
+            // 计算当前索引下的一维索引
+            int index = m_start_index;
+            for (int i = 0; i < m_nDim; ++i) {
+                index += indices[i] * m_strides[i];
+            }
+
+            // 使用迭代器值更新张量元素
+            m_pData.get()[index] = value;
+
+            // 更新索引并检查是否完成
+            for (int dim = m_nDim - 1; dim >= 0; dim--) {
+                if (indices[dim] < m_dims[dim] - 1) {
+                    indices[dim]++;
+                    break;
+                } else {
+                    if (dim == 0) done = true;
+                    indices[dim] = 0;
+                }
+            }
+        }
+        return *this;
+    }
 
 
     // Slice操作
     template <typename T>
     Tensor<T> Tensor<T>::operator()(const int dim_index) const {
-        if(dim_index >= m_nDim || dim_index < 0){
-            throw std::invalid_argument("Slice操作的维度超出张量维度");
-        }
-        Tensor<T> sliced_view = *this;
+        Tensor<T> sliced_view(*this);
         sliced_view.m_start_index += sliced_view.m_strides[0] * dim_index;
         sliced_view.m_nDim -= 1;
+        delete[] sliced_view.m_dims;
         sliced_view.m_dims = new int[sliced_view.m_nDim];
-        sliced_view.m_strides = new int[sliced_view.m_nDim];
+        delete[] sliced_view.m_strides;
+        sliced_view.m_strides = new long[sliced_view.m_nDim];
         sliced_view.m_total_size = 1;
         for(int i = 0; i < sliced_view.m_nDim; i++){
             sliced_view.m_dims[i] = m_dims[i + 1];
@@ -325,21 +352,20 @@ namespace ts{
 
     template <typename T>
     Tensor<T> Tensor<T>::operator()(const int dim_index, const std::initializer_list<int> indices) const{
-        if(dim_index >= m_nDim || dim_index < 0){
-            throw std::invalid_argument("Slice操作的维度超出张量维度");
-        }
         Tensor<T> sliced_view = *this;
         sliced_view.m_start_index += sliced_view.m_strides[0] * dim_index + *(indices.begin()) * sliced_view.m_strides[1];
         sliced_view.m_nDim -= 1;
         sliced_view.m_total_size /= m_dims[0];
+        delete[] sliced_view.m_dims;
         sliced_view.m_dims = new int[sliced_view.m_nDim];
-        sliced_view.m_strides = new int[sliced_view.m_nDim];
+        delete[] sliced_view.m_strides;
+        sliced_view.m_strides = new long[sliced_view.m_nDim];
         for(int i = 0; i < sliced_view.m_nDim; i++){
             sliced_view.m_dims[i] = m_dims[i + 1];
             sliced_view.m_strides[i] = m_strides[i + 1];
         }
-        sliced_view.m_total_size = sliced_view.m_total_size / m_dims[1] * (indices.end()-1 - indices.begin());
-        sliced_view.m_dims[0] = indices.end()-1 - indices.begin();
+        sliced_view.m_total_size = sliced_view.m_total_size / m_dims[1] * (indices.end() - indices.begin());
+        sliced_view.m_dims[0] = indices.end() - indices.begin();
         return sliced_view;
     }
 

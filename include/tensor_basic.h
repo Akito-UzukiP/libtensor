@@ -32,15 +32,16 @@ namespace ts {
             Tensor(T* pData, const int* dims, const int nDim); // Hard Copy Constructor
             Tensor(std::initializer_list<T> l, std::initializer_list<int> dims); // Constructor
             Tensor(const Tensor<T>& t, bool shallow_copy = true); // Shallow Copy constructor
-            Tensor<T>& operator=(const Tensor<T>& t); // Copy assignment operator
+            Tensor<T>& operator=(const Tensor<T>& t); // Copy assignment operator (shallow copy)
             ~Tensor(); // Destructor
-            
+            // Slice还没实现
             std::string size() const; 
             std::vector<int> shape() const; 
             int total_size() const; 
             std::string type() const; 
             std::string stride() const; 
             T* data_ptr() const; 
+            T* data_ptr();
 
            inline T& getPointerAtIndex(const int* dims); 
 
@@ -64,7 +65,7 @@ namespace ts {
             T& operator()(const int i , const int j) const; 
             Tensor<T> operator()(const int dim_index) const;  
             Tensor<T> operator()(const int dim_index, const std::initializer_list<int> indices) const; 
-
+    
             // Contiguous操作 
             // 检测是否连续
             bool is_contiguous() const;
@@ -119,7 +120,8 @@ namespace ts {
             // Mutate操作
             // TODO
             Tensor<T>& operator=(std::initializer_list<T> l); // 用列表中的元素替换张量中的元素
-
+            template<typename U>
+            Tensor<T>& operator=(U value); // 用一个值替换张量中的所有元素
 
             // Squeeze和Unsqueeze操作
             Tensor<T> squeeze(const int dim) const; 
@@ -139,6 +141,16 @@ namespace ts {
             friend Tensor<U> operator*(const Tensor<U>& t1, const Tensor<U>& t2); 
             template <typename U>
             friend Tensor<U> operator/(const Tensor<U>& t1, const Tensor<U>& t2); 
+
+            template <typename U, typename V>
+            friend Tensor<U> operator+(const Tensor<U>& t1, const V& t2);
+            template <typename U, typename V>
+            friend Tensor<U> operator-(const Tensor<U>& t1, const V& t2);
+            template <typename U, typename V>
+            friend Tensor<U> operator*(const Tensor<U>& t1, const V& t2);
+            template <typename U, typename V>
+            friend Tensor<U> operator/(const Tensor<U>& t1, const V& t2);
+
             template <typename U>
             friend Tensor<U> log(const Tensor<U>& lhs); 
 
@@ -155,49 +167,66 @@ namespace ts {
             template <typename U>
             friend Tensor<U> div(const Tensor<U>& t1, const Tensor<U>& t2); 
 
+            template <typename V>
+            Tensor<T> add(const V& t) const;
+            template <typename U, typename V>
+            friend Tensor<U> add(const Tensor<U>& t1, const V& t2);
+            template <typename V>
+            Tensor<T> sub(const V& t) const;
+            template <typename U, typename V>
+            friend Tensor<U> sub(const Tensor<U>& t1, const V& t2);
+            template <typename V>
+            Tensor<T> mul(const V& t) const;
+            template <typename U, typename V>
+            friend Tensor<U> mul(const Tensor<U>& t1, const V& t2);
+            template <typename V>
+            Tensor<T> div(const V& t) const;
+            template <typename U, typename V>
+            friend Tensor<U> div(const Tensor<U>& t1, const V& t2);
+
             
             Tensor<T> matmul(const Tensor<T>& t) const; 
             template <typename U>
             friend Tensor<U> matmul(const Tensor<U>& t1, const Tensor<U>& t2); 
 
             // 基础的reduction计算
-            Tensor<T> sum(const int dim);
+            Tensor<T> sum(const int dim) const;
             template <typename U>
             friend Tensor<U> sum(const Tensor<U>& t, const int dim);
-            Tensor<T> mean(const int dim); 
+            Tensor<T> mean(const int dim) const; 
             template <typename U>
             friend Tensor<U> mean(const Tensor<U>& t, const int dim); 
-            Tensor<T> max(const int dim);
+            Tensor<T> max(const int dim) const;
             template <typename U>
             friend Tensor<U> max(const Tensor<U>& t, const int dim);
-            Tensor<T> min(const int dim);
+            Tensor<T> min(const int dim) const;
             template <typename U>
             friend Tensor<U> min(const Tensor<U>& t, const int dim);
             //比较，有: gt ge lt le eq ne
-            Tensor<bool> gt(const Tensor<T>& t);
+            Tensor<bool> gt(const Tensor<T>& t) const;
             template <typename U>
             friend Tensor<bool> gt(const Tensor<U>& t1, const Tensor<U>& t2);
-            Tensor<bool> operator>(const Tensor<T>& t); 
-            Tensor<bool> ge(const Tensor<T>& t);
+            Tensor<bool> operator>(const Tensor<T>& t) const; 
+            Tensor<bool> ge(const Tensor<T>& t) const;
             template <typename U>
             friend Tensor<bool> ge(const Tensor<U>& t1, const Tensor<U>& t2);
-            Tensor<bool> operator>=(const Tensor<T>& t); 
-            Tensor<bool> lt(const Tensor<T>& t); 
+            Tensor<bool> operator>=(const Tensor<T>& t) const; 
+            Tensor<bool> lt(const Tensor<T>& t) const; 
             template <typename U>
             friend Tensor<bool> lt(const Tensor<U>& t1, const Tensor<U>& t2); 
-            Tensor<bool> operator<(const Tensor<T>& t); 
-            Tensor<bool> le(const Tensor<T>& t);
+            Tensor<bool> operator<(const Tensor<T>& t) const; 
+            Tensor<bool> le(const Tensor<T>& t) const;
             template <typename U>
             friend Tensor<bool> le(const Tensor<U>& t1, const Tensor<U>& t2);
-            Tensor<bool> operator<=(const Tensor<T>& t); 
-            Tensor<bool> eq(const Tensor<T>& t); 
+            Tensor<bool> operator<=(const Tensor<T>& t) const; 
+            Tensor<bool> eq(const Tensor<T>& t) const; 
             template <typename U>
             friend Tensor<bool> eq(const Tensor<U>& t1, const Tensor<U>& t2); 
-            Tensor<bool> operator==(const Tensor<T>& t); 
-            Tensor<bool> ne(const Tensor<T>& t); 
+            Tensor<bool> operator==(const Tensor<T>& t) const; 
+            Tensor<bool> ne(const Tensor<T>& t) const; 
             template <typename U>
             friend Tensor<bool> ne(const Tensor<U>& t1, const Tensor<U>& t2); 
-            Tensor<bool> operator!=(const Tensor<T>& t); 
+            Tensor<bool> operator!=(const Tensor<T>& t) const; 
 
             void serialize(const std::string& filename) const;
             template <typename U>
@@ -227,10 +256,10 @@ namespace ts {
     template <typename T>
     Tensor<T>::Tensor(const int* dims, const int nDim){
         m_nDim = nDim;
-        m_total_size = 1;
         m_dims = new int[m_nDim];
         m_strides = new long[m_nDim];
         m_start_index = 0;
+        m_total_size = 1;
         for(int i = 0;i<nDim;i++){
             m_dims[i] = dims[i];
             m_total_size *= m_dims[i];
@@ -315,13 +344,31 @@ namespace ts {
 
     template <typename T>
     Tensor<T>::Tensor(std::initializer_list<T> l, std::initializer_list<int> dims){
-        Tensor<T> t = Tensor<T>(dims);
-        T* data_ptr = t.m_pData.get();
-        int i = 0;
+        m_nDim = dims.size();
+        m_dims = new int[m_nDim];
+        m_pData = std::shared_ptr<T[]>(new T[l.size()]);
+        m_start_index = 0;
+        for (int i = 0; i < m_nDim; ++i) {
+            m_dims[i] = *(dims.begin()+i);
+        }
+        m_total_size = 1;
+        m_strides = new long[m_nDim];
+        for(int i = 0;i<m_nDim;i++){
+            m_total_size *= m_dims[i];
+        }
+        long i = 0;
         for(auto it = l.begin();it != l.end();it++){
-            data_ptr[i] = *it;
+            this->m_pData.get()[i] = *it;
             i++;
         }
+        for(int i = m_nDim-1;i>=0;i--){
+            if(i == m_nDim-1){
+                m_strides[i] = 1;
+            }else{
+                m_strides[i] = m_strides[i+1]*m_dims[i+1];
+            }
+        }
+        
     }
 
 
@@ -345,6 +392,9 @@ namespace ts {
                 m_pData.get()[i] = other.m_pData.get()[i];
             }
         }
+        // for(int i = 0;i<m_total_size;i++){
+        //     m_pData.get()[i] = other.m_pData.get()[i];
+        // }
     }
 
     // Shallow Copy assignment operator
@@ -375,8 +425,8 @@ namespace ts {
     // Destructor
     template <typename T>
     Tensor<T>::~Tensor() {
-        delete[] m_dims;
-        delete[] m_strides;
+        if (m_dims != nullptr) delete[] m_dims;
+        if (m_strides != nullptr) delete[] m_strides;
     }
 
     // Return the size of each dimension
@@ -433,6 +483,12 @@ namespace ts {
     T* Tensor<T>::data_ptr() const {
         return m_pData.get();
     }
+    
+    template <typename T>
+    T* Tensor<T>::data_ptr() {
+        return m_pData.get();
+    }
+
 
     template <typename T>
     T& Tensor<T>::getPointerAtIndex(const int* dims){
@@ -488,18 +544,19 @@ namespace ts {
                 index += indices[i] * m.m_strides[i];
             }
 
-            if constexpr(std::is_integral<U>::value || std::is_floating_point<U>::value){
-                os << std::setw(max_length) << m.m_pData.get()[index];
-            }else if constexpr(typeid(U) == typeid(bool)){
-                if(m.m_pData.get()[index]){
-                    os << "True";
-                }else{
-                    os << "False";
+            if constexpr(std::is_same<U, bool>::value) {  // 检查U是否为bool
+                if (m.m_pData.get()[index]) {
+                    std::cout << "  True";
+                } else {
+                    std::cout << " False";
                 }
-
-            }else{
-                os << m.m_pData.get()[index];
+            } else if constexpr(std::is_integral<U>::value || std::is_floating_point<U>::value) {
+                std::cout << std::setw(max_length) << m.m_pData.get()[index];
+            } else {
+                std::cout << m.m_pData.get()[index];
             }
+
+
             std::string prefix_space = "        "; // 用于打印每一行的前缀空格
             // 更新索引并检查是否完成
             for (int dim = m.m_nDim - 1; dim >= 0; dim--) { // 从最内层往外更新，如果最内层到头了就更新上一层 ，break保证不会碰到未满的层的外层
@@ -624,7 +681,7 @@ namespace ts {
         T* data = new T[total_size];
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_real_distribution<> dis(0, 10);
+        std::uniform_real_distribution<> dis(0, 1);
         for(int i = 0;i<total_size;i++){
             data[i] = dis(gen);
         }
