@@ -54,8 +54,13 @@ namespace ts{
     }
     template<typename U>
     Tensor<bool> gt(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        if(lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims){
+        if(lhs.m_nDim != rhs.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        }
+        for(int i = 0; i < lhs.m_nDim; i++){
+            if(lhs.m_dims[i] != rhs.m_dims[i]){
+                throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+            }
         }
         Tensor<bool> res(lhs.m_dims,lhs.m_nDim);
         typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
@@ -119,8 +124,13 @@ namespace ts{
     }
     template<typename U>
     Tensor<bool> ge(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        if(lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims){
+        if(lhs.m_nDim != rhs.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        }
+        for(int i = 0; i < lhs.m_nDim; i++){
+            if(lhs.m_dims[i] != rhs.m_dims[i]){
+                throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+            }
         }
         Tensor<bool> res(lhs.m_dims,lhs.m_nDim);
         typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
@@ -184,8 +194,13 @@ namespace ts{
     }
     template<typename U>
     Tensor<bool> lt(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        if(lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims){
+        if(lhs.m_nDim != rhs.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        }
+        for(int i = 0; i < lhs.m_nDim; i++){
+            if(lhs.m_dims[i] != rhs.m_dims[i]){
+                throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+            }
         }
         Tensor<bool> res(lhs.m_dims,lhs.m_nDim);
         typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
@@ -249,8 +264,13 @@ namespace ts{
     }
     template<typename U>
     Tensor<bool> le(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        if(lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims){
+        if(lhs.m_nDim != rhs.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        }
+        for(int i = 0; i < lhs.m_nDim; i++){
+            if(lhs.m_dims[i] != rhs.m_dims[i]){
+                throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+            }
         }
         Tensor<bool> res(lhs.m_dims,lhs.m_nDim);
         typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
@@ -314,8 +334,13 @@ namespace ts{
     }
     template<typename U>
     Tensor<bool> eq(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        if(lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims){
+        if(lhs.m_nDim != rhs.m_nDim ){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        }
+        for(int i = 0; i < lhs.m_nDim; i++){
+            if(lhs.m_dims[i] != rhs.m_dims[i]){
+                throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+            }
         }
         Tensor<bool> res(lhs.m_dims,lhs.m_nDim);
         typename Tensor<U>::_Const_Iterator it_lhs(&lhs);
@@ -379,8 +404,13 @@ namespace ts{
     }
     template<typename U>
     Tensor<bool> ne(const Tensor<U>& lhs, const Tensor<U>& rhs){
-        if(lhs.m_nDim != rhs.m_nDim || lhs.m_dims != rhs.m_dims){
+        if(lhs.m_nDim != rhs.m_nDim){
             throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+        }
+        for(int i = 0; i < lhs.m_nDim; i++){
+            if(lhs.m_dims[i] != rhs.m_dims[i]){
+                throw std::invalid_argument("Dimensions of lhs and rhs do not match.");
+            }
         }
         Tensor<bool> res(lhs.m_dims,lhs.m_nDim);
         typename Tensor<U>::_Const_Iterator it_lhs(&lhs);

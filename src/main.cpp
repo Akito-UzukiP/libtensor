@@ -127,6 +127,7 @@ void testBasicArithmeticOperations() {
     ts::Tensor<int> m = a.mul(b);
     ts::Tensor<int> n = a.div(b);
 
+    
     // 确认加法结果
     // 其他算术操作...
 }
@@ -159,14 +160,33 @@ void testSerialization(){
     ts::Tensor<double> t2 = ts::deserialize<double>("t1.bin");
     std::cout<<(t1 == t2)<<std::endl;
 }
+void testComparasions() {
+    ts::Tensor<double> t1 = ts::Tensor<double>({0.1,1.2,2.2,3.1,4.9,5.2},{3,2});
+    ts::Tensor<double> t2 = ts::Tensor<double>({0.2,1.3,2.3,3.2,4.8,5.1},{3,2});
+    ts::Tensor<bool> t3 = ts::eq<double>(t1, t2);
+    std::cout<<"eq:"<<t3<<std::endl;
+    ts::Tensor<bool> t4 = ts::ne<double>(t1, t2);
+    std::cout<<"ne:"<<t4<<std::endl;
+    ts::Tensor<bool> t5 = ts::gt<double>(t1, t2);
+    std::cout<<"gt:"<<t5<<std::endl;
+    ts::Tensor<bool> t6 = ts::ge<double>(t1, t2);
+    std::cout<<"ge:"<<t6<<std::endl;
+    ts::Tensor<bool> t7 = ts::lt<double>(t1, t2);
+    std::cout<<"lt:"<<t7<<std::endl;
+    ts::Tensor<bool> t8 = ts::le<double>(t1, t2);
+    std::cout<<"le:"<<t8<<std::endl;
+
+}
+
 
 int main(){
-    testConstructionAndAssignment();
-    elementAccessTest();
-    testTensorOperations();
-    testMathOperations();
-    testEinsum();
-    testSerialization();
+    // testConstructionAndAssignment();
+    // elementAccessTest();
+    // testTensorOperations();
+    // testMathOperations();
+    // testEinsum();
+    // testSerialization();
+    testComparasions();
 
 
 
