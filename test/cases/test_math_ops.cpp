@@ -17,15 +17,6 @@ TEST_F(TensorTest, Reduction) {
 
         auto xarr = xt::eval(xt::random::randn<float>(shape));
         auto tensor = xtada::to_tensor(xarr);
-        // std::cout<< xarr << std::endl;
-        // std::cout<< tensor << std::endl;
-        // std::cout<< xt::sum(xarr, axis) << std::endl;
-        // std::cout<< bm::reduce_sum(tensor, axis) << std::endl;
-        // std::cout<< bm::reduce_sum(tensor, axis).size() << std::endl;
-        // std::cout<< bm::reduce_sum(tensor, axis).stride() << std::endl;
-        // std::cout<< bm::reduce_sum(tensor, axis).data_ptr() << std::endl;
-        // std::cout<< bm::reduce_sum(tensor, axis).total_size() << std::endl;
-        // xtada::equiv(xt::eval(xt::sum(xarr, axis)), bm::reduce_sum(tensor, axis));
         EXPECT_EQUIV(xt::sum(xarr, axis), bm::reduce_sum(tensor, axis));
         EXPECT_EQUIV((xt::xarray<float>) xt::mean(xarr, axis), bm::reduce_mean(tensor, axis));
         EXPECT_EQUIV(xt::amax(xarr, axis), bm::reduce_max(tensor, axis));

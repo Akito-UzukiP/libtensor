@@ -10,10 +10,15 @@ namespace ts{
     template<typename U>
     Tensor<U> operator+(const Tensor<U>& lhs, const Tensor<U>& rhs){
         std::vector<int> broadcast_dims = get_broadcast_shape({lhs,rhs});
+        // std::cout<<"broadcast_dims: ";
+        // for(int i = 0; i < broadcast_dims.size(); i++){
+        //     std::cout<<broadcast_dims[i]<<" ";
+        // }
+        // std::cout<<std::endl;
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        binary_elementwise_operation<U>(lhs, rhs, res, [](U a, U b){return a+b;});
+        binary_elementwise_operation<U>(lhs_, rhs_, res, [](U a, U b){return a+b;});
         return res;
     }
     template<typename U>
@@ -22,7 +27,7 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        binary_elementwise_operation<U>(lhs, rhs, res, [](U a, U b){return a-b;});
+        binary_elementwise_operation<U>(lhs_, rhs_, res, [](U a, U b){return a-b;});
         return res;
     }
 
@@ -32,7 +37,7 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        binary_elementwise_operation<U>(lhs, rhs, res, [](U a, U b){return a*b;});
+        binary_elementwise_operation<U>(lhs_, rhs_, res, [](U a, U b){return a*b;});
         return res;
     }
 
@@ -42,7 +47,7 @@ namespace ts{
         Tensor<U> lhs_ = broadcast(lhs, broadcast_dims);
         Tensor<U> rhs_ = broadcast(rhs, broadcast_dims);
         Tensor<U> res(lhs.shape());
-        binary_elementwise_operation<U>(lhs, rhs, res, [](U a, U b){return a/b;});
+        binary_elementwise_operation<U>(lhs_, rhs_, res, [](U a, U b){return a/b;});
         return res;
     }
 

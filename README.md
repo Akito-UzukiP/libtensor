@@ -26,6 +26,7 @@
 - 索引和切片操作：
   - `ts::Tensor t1 = t(1); // 第二个元素`
   - `ts::Tensor t2 = t(2,{2,4}); // 第三维的第三至第五个元素（不包括第五个）`
+  - `ts::Tensor t3 = t({1,2},{2,4}); // 第二至第三个元素的第三至第五个元素（不包括第五个）`
 
 
 ### 2.2 Joining操作
@@ -82,10 +83,10 @@ tensor([[  0.1000,   1.2000,   3.4000,   5.6000,   7.8000],
 
 ```cpp
 ts::Tensor t = ts::tensor(T data[]);
-ts::Tensor t1 = ts::transpose(t, int dim1, int dim2); // 沿指定维度转置tensor t
-ts::Tensor t2 = t.transpose(int dim1, int dim2); // 另一种转置tensor t的方式
-ts::Tensor t3 = ts::permute(t, int dims[]); // 根据给定维度排列tensor t
-ts::Tensor t4 = t.permute(int dims[]); // 另一种排列tensor t的方式
+ts::Tensor t1 = ts::transpose(t, int dim1, int dim2);
+ts::Tensor t2 = t.transpose(int dim1, int dim2);
+ts::Tensor t3 = ts::permute(t, int dims[]); 
+ts::Tensor t4 = t.permute(int dims[]);
 
 // 示例
     t = ts::Tensor<double>({0.1,1.2,3.4,5.6,7.8,2.2,3.1,4.5,6.7,8.9,4.9,5.2,6.3,7.4,8.5},{3,5});
@@ -107,9 +108,9 @@ tensor([[  0.1000,   1.2000,   3.4000],
 ### 2.5 View操作
 ```cpp
 ts::Tensor t = ts::tensor(T data[]);
-ts::Tensor t3 = ts::view(t, int shape[]); // This views the tensor t according to
+ts::Tensor t3 = ts::view(t, int shape[]); 
 the given shape.
-ts::Tensor t4 = t.view(int shape[]); // Another way to view the tensor t.
+ts::Tensor t4 = t.view(int shape[]);
 
 
 // Example
@@ -123,6 +124,8 @@ tensor([[ 0.1000, 1.2000, 3.4000],
         [ 8.9000, 4.9000, 5.2000],
         [ 6.3000, 7.4000, 8.5000]])
 tensor([[ 0.1000, 1.2000, 3.4000, 5.6000, 7.8000, 2.2000, 3.1000, 4.5000, 6.7000,8.9000, 4.9000, 5.2000, 6.3000, 7.4000, 8.5000]])
+
+// 如果内存连续，则可以直接View(shallow copy)， 如果内存不连续，则需要先拷贝contiguous后再View
 ```
 
 ## 3 数学计算
@@ -142,6 +145,8 @@ ts::Tensor<int> k = a.add(b);
 ts::Tensor<int> l = a.sub(b);
 ts::Tensor<int> m = a.mul(b);
 ts::Tensor<int> n = a.div(b);
+ts::Tensor<double> oo = ts::arange<double>(1000, 1361).view({3,4,5,6});
+ts::Tensor<double> o = ts::log<double>(oo);
  ```
 
  ### 3.2 Reduction计算，如sum,mean,max,min
@@ -203,10 +208,7 @@ std::cout << ts::einsum("i,i->", t1, t2) << std::endl << ts::einsum("i,i->i", t1
 
 ### 4.1 序列化
 ```cpp 
-ts::Tensor t = ts::tensor(T data[]);
-ts::save(t, string filename); // This saves the tensor t to the given file.
-ts::Tensor t1 = ts::load(string filename); // This loads the tensor t from the given
-file.
-std::cout << t << std::endl; // This should pretty-print the tensor t
+    ts::Tensor< double> t1 = ts::Tensor<double>({0.1,1.2,2.2,3.1,4.9,5.2},{3,2});
+    ts::serialize(t1, "t1.bin");
+    ts::Tensor<double> t2 = ts::deserialize<double>("t1.bin");
 ```
-![Serialized](serialized.png)

@@ -19,7 +19,6 @@ namespace ts {
             long m_total_size; // Total size of the tensor
             int*  m_dims; // Dimension sizes
             int m_start_index; // Start index
-            //T *m_pData; // Element array,看起来得重写一个data类，提供一些基本的操作，或者干脆就用智能指针接手
             std::shared_ptr<T[]> m_pData;
 
             long* m_strides; // Strides,
@@ -35,7 +34,6 @@ namespace ts {
             Tensor(const Tensor<T>& t, bool shallow_copy = true); // Shallow Copy constructor
             Tensor<T>& operator=(const Tensor<T>& t); // Copy assignment operator (shallow copy)
             ~Tensor(); // Destructor
-            // Slice还没实现
             std::string size() const; 
             std::vector<int> shape() const; 
             int total_size() const; 
