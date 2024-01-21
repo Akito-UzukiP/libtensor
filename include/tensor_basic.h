@@ -43,6 +43,8 @@ namespace ts {
             std::string stride() const; 
             T* data_ptr() const; 
             T* data_ptr();
+            template <typename U>
+            friend Tensor<U> slice(const Tensor<U>& org, const std::vector<std::pair<int, int>> &slices);
 
            inline T& getPointerAtIndex(const int* dims); 
 
