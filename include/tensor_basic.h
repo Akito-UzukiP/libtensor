@@ -30,6 +30,7 @@ namespace ts {
             Tensor(const std::vector<int>& dims); // Constructor
             Tensor(T* pData, const std::initializer_list<int>& dims); // Constructor
             Tensor(T* pData, const int* dims, const int nDim); // Hard Copy Constructor
+            Tensor(const T* pData, const std::vector<int>& dims); // Hard Copy Constructor
             Tensor(std::initializer_list<T> l, std::initializer_list<int> dims); // Constructor
             Tensor(const Tensor<T>& t, bool shallow_copy = true); // Shallow Copy constructor
             Tensor<T>& operator=(const Tensor<T>& t); // Copy assignment operator (shallow copy)
@@ -73,6 +74,7 @@ namespace ts {
             Tensor<T> contiguous() const;
             // View操作，如果内存连续则共享原内存，若内存不连续则重排后新建内存
             Tensor<T> view(const std::initializer_list<int>& dims) const; 
+            Tensor<T> view(const std::vector<int>& dims) const;
             Tensor<T> view(const int* dims, const int nDim) const; 
             template <typename U>
             friend Tensor<U> view(const Tensor<U>& org, const std::initializer_list<int>& dims);
@@ -84,8 +86,11 @@ namespace ts {
             
             // Permute操作
             Tensor<T> permute(const std::initializer_list<int>& dims) const; 
+            Tensor<T> permute(const std::vector<int>& dims) const;
             template <typename U>
             friend Tensor<U> permute(const Tensor<U>& org, const std::initializer_list<int>& dims); 
+            template <typename U>
+            friend Tensor<U> permute(const Tensor<U>& org, const std::vector<int>& dims); 
             // Slice操作
             // TODO 在上面的operator()中实现
 
@@ -93,7 +98,8 @@ namespace ts {
             // TODO
             template <typename U>
             friend Tensor<U> concat(const Tensor<U>& t1, const Tensor<U>& t2, const int axis); 
-
+            template <typename U>
+            friend Tensor<U> concat(const std::vector<Tensor<U>>& tensors, const int axis);
             // tile操作
             template <typename U>
             friend Tensor<U> repeat_along_axis(const Tensor<U>& org,const int axis,const int count);
@@ -318,6 +324,29 @@ namespace ts {
             m_pData.get()[i] = pData[i];
         }
     }
+    template <typename T>
+    Tensor<T>::Tensor(const T* pData, const std::vector<int>& dims){
+        m_nDim = dims.size();
+        m_total_size = 1;
+        m_dims = new int[m_nDim];
+        m_strides = new long[m_nDim];
+        m_start_index = 0;
+        for(int i = 0;i<dims.size();i++){
+            m_dims[i] = *(dims.begin()+i);
+            m_total_size *= m_dims[i];
+        }
+        for(int i = dims.size()-1;i>=0;i--){
+            if(i == dims.size()-1){
+                m_strides[i] = 1;
+            }else{
+                m_strides[i] = m_strides[i+1]*m_dims[i+1];
+            }
+        }
+        m_pData = std::shared_ptr<T[]>(new T[m_total_size]);
+        for(int i = 0;i<m_total_size;i++){
+            m_pData.get()[i] = pData[i];
+        }
+    }    
     template <typename T>
     Tensor<T>::Tensor(T* pData, const int* dims, const int nDim){
         m_nDim = nDim;
@@ -591,6 +620,7 @@ namespace ts {
     template <typename T>
     Tensor<T> zeros(const std::initializer_list<int>& dims){
         int total_size = 1;
+        
         int nDim = dims.size();
         int* dim = new int[nDim];
         for(int i = 0;i<nDim;i++){
@@ -606,6 +636,7 @@ namespace ts {
         delete[] dim;
         return t;
     }
+
     template <typename T>
     Tensor<T> zeros(const int* dims, const int nDim){
         int total_size = 1;
@@ -665,7 +696,24 @@ namespace ts {
         delete[] dim;
         return t;
     }
-
+    template <typename T>
+    Tensor<T> ones(const std::vector<int>& dims){
+        int total_size = 1;
+        int nDim = dims.size();
+        int* dim = new int[nDim];
+        for(int i = 0;i<nDim;i++){
+            dim[i] = *(dims.begin()+i);
+            total_size *= dim[i];
+        }
+        T* data = new T[total_size];
+        for(int i = 0;i<total_size;i++){
+            data[i] = 1;
+        }
+        Tensor<T> t = Tensor<T>(data,dims);
+        delete[] data;
+        delete[] dim;
+        return t;
+    }
 
 
 
@@ -734,9 +782,33 @@ namespace ts {
         delete[] dim;
         return t;
     }
+    template <typename T>
+    Tensor<T> eye(const int i, const int j){
+        Tensor<T> t = zeros<T>({i,j});
+        for(int k = 0;k<std::min(i,j);k++){
+            t.data_ptr()[k*j+k] = 1;
+        }
+        return t;
+    }
 
     template <typename T>
     Tensor<T> full(const std::initializer_list<int>& dims, T value){
+        int total_size = 1;
+        int nDim = dims.size();
+        int* dim = new int[nDim];
+        for(int i = 0;i<nDim;i++){
+            dim[i] = *(dims.begin()+i);
+            total_size *= dim[i];
+        }
+        T* data = new T[total_size];
+        std::fill(data, data + total_size, value);  // 使用 std::fill 替代循环
+        Tensor<T> t = Tensor<T>(data,dims);
+        delete[] data;
+        delete[] dim;
+        return t;
+    }
+    template <typename T>
+    Tensor<T> full(const std::vector<int>& dims, T value){
         int total_size = 1;
         int nDim = dims.size();
         int* dim = new int[nDim];
@@ -774,7 +846,6 @@ namespace ts {
         }
         return m_pData.get()[index];
     }
-
     template <typename T>
     T& Tensor<T>::operator()(const int* indices) const{
         int index = m_start_index;
@@ -786,6 +857,9 @@ namespace ts {
 
     template <typename T>
     T& Tensor<T>::operator()(const std::vector<int> indices) const{
+        if(indices.size() == 0){
+            return m_pData.get()[m_start_index];
+        }
         int index = m_start_index;
         for(int i = 0;i<m_nDim;i++){
             index += indices[i]*m_strides[i];
@@ -814,6 +888,21 @@ namespace ts {
         index += i*m_strides[0];
         index += j*m_strides[1];
         return m_pData.get()[index];
+    }
+
+    template <typename T>
+    Tensor<T> slice(const Tensor<T> &tensor, const std::vector<std::pair<int, int>> &slices){
+        Tensor<T> output(tensor);
+        output.m_total_size = 1;
+        for(int i = 0;i<slices.size();i++){
+            output.m_dims[i] = slices[i].second - slices[i].first;
+            output.m_total_size *= output.m_dims[i];
+        }
+        output.m_start_index = 0;
+        for(int i = 0;i<slices.size();i++){
+            output.m_start_index += slices[i].first*output.m_strides[i];
+        }
+        return output;
     }
     
 

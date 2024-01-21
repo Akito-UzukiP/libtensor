@@ -117,13 +117,12 @@ ts::Tensor t = ts::tensor([[0.1, 1.2, 3.4, 5.6, 7.8], [2.2, 3.1, 4.5, 6.7, 8.9],
 [4.9, 5.2, 6.3, 7.4, 8.5]]);
 std::cout << ts::view(t, [5, 3]) << std::endl << t.view([1, 15]) << std::endl;
 // Output
-[[ 0.1000, 1.2000, 3.4000],
- [ 5.6000, 7.8000, 2.2000],
- [ 3.1000, 4.5000, 6.7000],
- [ 8.9000, 4.9000, 5.2000],
- [ 6.3000, 7.4000, 8.5000]]
-[[ 0.1000, 1.2000, 3.4000, 5.6000, 7.8000, 2.2000, 3.1000, 4.5000, 6.7000,
-8.9000, 4.9000, 5.2000, 6.3000, 7.4000, 8.5000]]
+tensor([[ 0.1000, 1.2000, 3.4000],
+        [ 5.6000, 7.8000, 2.2000],
+        [ 3.1000, 4.5000, 6.7000],
+        [ 8.9000, 4.9000, 5.2000],
+        [ 6.3000, 7.4000, 8.5000]])
+tensor([[ 0.1000, 1.2000, 3.4000, 5.6000, 7.8000, 2.2000, 3.1000, 4.5000, 6.7000,8.9000, 4.9000, 5.2000, 6.3000, 7.4000, 8.5000]])
 ```
 
 ## 3 数学计算
@@ -161,19 +160,19 @@ ts::Tensor<int> i = a.min(int dim); // 另一种求最小值的方式
 ```cpp
 ts::Tensor t1 = ts::tensor(T data1[]);
 ts::Tensor t2 = ts::tensor(T data2[]);
-ts::Tensor<bool> t3 = ts::eq(t1, t2);// This compares t1 and t2 element-wise.
-ts::Tensor t4<bool> = t1.eq(t2);// Another way to compare t1 and t2 element-wise.
-ts::Tensor t5<bool> = t1 == t2;// Another way to compare t1 and t2 element-wise.
-// ... Similar for ne, gt, ge, lt, le.
+ts::Tensor<bool> t3 = ts::eq(t1, t2);
+ts::Tensor t4<bool> = t1.eq(t2);
+ts::Tensor t5<bool> = t1 == t2;
+
 
 // Example
 ts::Tensor t1 = ts::tensor([[0.1, 1.2], [2.2, 3.1], [4.9, 5.2]]);
 ts::Tensor t2 = ts::tensor([[0.2, 1.3], [2.2, 3.2], [4.8, 5.2]]);
 std::cout << (t1 == t2) << std::endl;
 // Output
-[[ False, False],
- [ True, False],
- [ False, True]]
+tensor([[ False, False],
+         [ True, False],
+         [ False, True]])
 ```
 
 ### 3.4 Einsum魔法计算
@@ -193,8 +192,7 @@ matrix multiplication of t1 and t2.
 // Example
 ts::Tensor t1 = ts::tensor([1, 2, 3]);
 ts::Tensor t2 = ts::tensor([4, 5, 6]);
-std::cout << ts::einsum("i,i->", t1, t2) << std::endl << ts::einsum("i,i->i", t1,
-t2) << std::endl;
+std::cout << ts::einsum("i,i->", t1, t2) << std::endl << ts::einsum("i,i->i", t1,t2) << std::endl;
 // Output
 32
 [ 4, 10, 18]

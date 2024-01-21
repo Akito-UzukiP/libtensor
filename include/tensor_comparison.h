@@ -7,24 +7,24 @@ namespace ts{
     // comparison gt ge lt le eq ne
 
     template<typename T>
-    bool equal(T a, T b){
+    inline bool equal(T a, T b){
         return a == b;
     }
     template<>
-    bool equal(float a, float b){
+    inline bool equal(float a, float b){
         return std::abs(a-b) < 1e-6;
     }
     template<>
-    bool equal(double a, double b){
+    inline bool equal(double a, double b){
         return std::abs(a-b) < 1e-9;
     }
     template<>
-    bool equal(long double a, long double b){
+    inline bool equal(long double a, long double b){
         return std::abs(a-b) < 1e-12;
     }
 
     template<typename T, typename U> // int and float
-    bool equal(T a, U b){
+    inline bool equal(T a, U b){
         return std::abs(a-b) < 1e-6;
     }
 

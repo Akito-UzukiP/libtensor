@@ -1,5 +1,5 @@
 #include <iostream>
-#include "tensor.h"
+#include "../include/tensor.h"
 #include <assert.h>
 #include <immintrin.h>
 #include <chrono>
@@ -7,6 +7,12 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include "./benchmark/api.hpp"
+#include "gtest/gtest.h"
+#include <xtensor/xarray.hpp>
+#include <xtensor/xarray.hpp>
+#include <xtensor/xadapt.hpp>
+#include <xtensor/xio.hpp>
 void testConstructionAndAssignment() {
     // 测试默认构造函数
     ts::Tensor<float> defaultTensor;
@@ -177,6 +183,21 @@ void testComparasions() {
     std::cout<<"le:"<<t8<<std::endl;
 
 }
+template<typename T>
+bool equiv(const xt::xarray<T> &expected, const ts::Tensor<T> &actual) {
+    auto shape = expected.shape();
+    auto size = expected.size();
+    for (size_t i = 0; i < size; i++) {
+        std::vector<size_t> index;
+        size_t tmp = i, step = size;
+        for (int j = 0; j < shape.size(); j++) {
+            step /= shape[j];
+            index.push_back(tmp / step);
+            tmp %= step;
+        }
+    }
+    return true;
+}
 
 
 int main(){
@@ -186,9 +207,22 @@ int main(){
     // testMathOperations();
     // testEinsum();
     // testSerialization();
-    testComparasions();
-
-
-
+    // testComparasions();
+    // ts::Tensor<double> t1 = ts::arange<double>(0, 3*5).view({3,5});
+    // ts::Tensor<double> t2 = ts::arange<double>(0, 4*5*6).view({4,5,6});
+    // std::cout<< ts::einsum<double>("ik,jkl->ij", {t1, t2}) << std::endl;
+    ts::Tensor<float> t1 = ts::arange<float>(0, 37).view({37});
+    // ts::Tensor<int> t2 = t1;
+    // for(int i = 0; i < 3;i++){
+    //     t2 = ts::concat<int>(t2, t1, 0);
+    //     std::cout<<t2<<std::endl;
+    // }
+    ts::Tensor<float> t2 = t1.sum(0);
+    xt::xarray<float> x1 = xt::arange<float>(0, 37);
+    xt::xarray<float> x2 = xt::sum(x1, 0);
+    std::vector<int> shape = {0};
+    float i = t2(shape);
+    std::cout<<i<<std::endl;
+    std::cout<< equiv(x2, t2)<<std::endl;
     return 0;
 }

@@ -2,6 +2,7 @@
 #define TS_TENSOR_CALCULATION_H
 #include "tensor_basic.h"
 #include "tensor_operation.h"
+#include <cmath>
 #include <chrono>
 namespace ts{
 
@@ -78,33 +79,8 @@ namespace ts{
 
     template<typename U>
     Tensor<U> log(const Tensor<U>& t){
-        Tensor<U> res(t,false);
-        long t_index = 0;
-        long res_index = 0;
-        long* _indices = new long[t.m_nDim];
-        bool done = false;
-        for(int i = 0;i<t.m_nDim;i++){
-            _indices[i] = 0;
-        }
-        while(!done){
-            res.data_ptr()[res_index] = log(t.data_ptr()[t_index]);
-            for(long dim = t.m_nDim-1;dim>=0;dim--){
-                if(_indices[dim] < t.m_dims[dim]-1){ 
-                    _indices[dim]++;
-                    t_index += t.m_strides[dim];
-                    res_index += res.m_strides[dim];
-                    break;
-                }else{
-                    if(dim == 0){
-                        done = true;
-                    }
-                    t_index -= t.m_strides[dim]*(_indices[dim]);
-                    res_index -= res.m_strides[dim]*(_indices[dim]);
-                    _indices[dim] = 0;
-                }
-            }
-        }
-        delete[] _indices;
+        Tensor<U> res(t.shape());
+        unary_elementwise_operation(t, res, [](U a){return std::log(a);});
         return res;
 
     }
@@ -280,6 +256,10 @@ namespace ts{
             dims = new int[1];
             dims[0] = 1;
             res = zeros<T>(dims,m_nDim);
+            for(int i = 0; i < m_dims[0]; i++){
+                res.data_ptr()[0] += data_ptr()[i];
+            }
+            return res;
         }else{
             dims = new int[m_nDim-1];
             int nDim = m_nDim-1;
@@ -359,6 +339,11 @@ namespace ts{
             dims = new int[1];
             dims[0] = 1;
             res = zeros<T>(dims,m_nDim);
+            for(int i = 0; i < m_dims[0]; i++){
+                res.data_ptr()[0] += data_ptr()[i];
+            }
+            res.data_ptr()[0] /= m_dims[0];
+            return res;
         }else{
             dims = new int[m_nDim-1];
             int nDim = m_nDim-1;
@@ -441,6 +426,11 @@ namespace ts{
             dims = new int[1];
             dims[0] = 1;
             res = zeros<T>(dims,m_nDim);
+            res.data_ptr()[0] = data_ptr()[0];
+            for(int i = 1; i < m_dims[0]; i++){
+                res.data_ptr()[0] = std::max(res.data_ptr()[0], data_ptr()[i]);
+            }
+            return res;
         }else{
             dims = new int[m_nDim-1];
             int nDim = m_nDim-1;
@@ -525,6 +515,11 @@ namespace ts{
             dims = new int[1];
             dims[0] = 1;
             res = zeros<T>(dims,m_nDim);
+            res.data_ptr()[0] = data_ptr()[0];
+            for(int i = 1; i < m_dims[0]; i++){
+                res.data_ptr()[0] = std::min(res.data_ptr()[0], data_ptr()[i]);
+            }
+            return res;
         }else{
             dims = new int[m_nDim-1];
             int nDim = m_nDim-1;

@@ -151,7 +151,36 @@ namespace ts{
         }
         return t;
     }
-
+    template <typename T>
+    Tensor<T> Tensor<T>::view(const std::vector<int>& dims) const{
+        int total_size = 1;
+        for(int i:dims){
+            total_size *= i;
+        }
+        if(total_size != this->m_total_size){
+            throw std::invalid_argument("View操作的目标维度大小与原张量不匹配");
+        }
+        Tensor<T> t;
+        if(is_contiguous()){
+            t = *this;
+        }else{
+            t = this->contiguous();
+        }
+        t.m_nDim = dims.size();
+        t.m_dims = new int[t.m_nDim];
+        t.m_strides = new long[t.m_nDim];
+        for(int i = 0;i<dims.size();i++){
+            t.m_dims[i] = *(dims.begin()+i);
+        }
+        for(int i = dims.size()-1;i>=0;i--){
+            if(i == dims.size()-1){
+                t.m_strides[i] = 1;
+            }else{
+                t.m_strides[i] = t.m_strides[i+1]*t.m_dims[i+1];
+            }
+        }
+        return t;
+    }
     template <typename T>
     Tensor<T> Tensor<T>::view(const int* dims, const int nDim) const{
         int total_size = 1;
@@ -256,12 +285,44 @@ namespace ts{
 
         return permuted_view;
     }
+    template <typename T>
+    Tensor<T> Tensor<T>::permute(const std::vector<int> &dims) const {
+        if (dims.size() != m_nDim) {
+            throw std::invalid_argument("Permute操作的维度数量与张量维度数量不匹配");
+        }
 
+        // 检查dims中的值是否合法且不重复
+        std::vector<bool> dim_used(m_nDim, false);
+        for (int dim : dims) {
+            if (dim < 0 || dim >= m_nDim || dim_used[dim]) {
+                throw std::invalid_argument("Permute操作中存在非法或重复维度");
+            }
+            dim_used[dim] = true;
+        }
+
+        Tensor<T> permuted_view = *this; // 创建原始张量的副本,shallow copy
+        std::vector<int> new_dims(m_nDim);
+        std::vector<int> new_strides(m_nDim);
+        int i = 0;
+        for (int dim : dims) {
+            permuted_view.m_dims[i] = m_dims[dim];
+            permuted_view.m_strides[i] = m_strides[dim];
+            ++i;
+        }
+
+        return permuted_view;
+    }
     template <typename U>
     Tensor<U> permute(const Tensor<U>& org,const std::initializer_list<int> &dims){
 
         return org.permute(dims);
     }
+    template <typename U>
+    Tensor<U> permute(const Tensor<U>& org,const std::vector<int> &dims){
+
+        return org.permute(dims);
+    }
+
 
 
     // Mutate操作
@@ -583,6 +644,51 @@ namespace ts{
             it1.reset();
         }
         return t;
+    }
+
+    template <typename U>
+    Tensor<U> concat(const std::vector<Tensor<U>>& tensors, const int axis){
+        int *dim = new int[tensors[0].m_nDim];
+        for(int i = 0;i<tensors[0].m_nDim;i++){
+            dim[i] = tensors[0].m_dims[i];
+        }
+        for(int i = 1;i<tensors.size();i++){
+            for(int j = 0;j<tensors[i].m_nDim;j++){
+                if(j != axis && tensors[i].m_dims[j] != dim[j]){
+                    throw std::invalid_argument("Concat操作的两个张量在非拼接维度上的维度不匹配");
+                }
+            }
+            dim[axis] += tensors[i].m_dims[axis];
+        }
+
+        Tensor<U> t = Tensor<U>(dim,tensors[0].m_nDim);
+        int* dim_order = new int[tensors[0].m_nDim];
+        int i = 1;
+        for(int j = 0;j<tensors[0].m_nDim;j++){
+            if(j != axis){
+                dim_order[i] = j;
+                i++;
+            }
+        }
+        dim_order[0] = axis;
+
+        std::vector<typename Tensor<U>::_Const_Iterator> it1s;
+        for(int i = 0;i<tensors.size();i++){
+            it1s.push_back(typename Tensor<U>::_Const_Iterator(&tensors[i], dim_order, tensors[i].m_nDim));
+
+        }
+        typename Tensor<U>::_Iterator it(&t, dim_order, tensors[0].m_nDim);
+        int index_of_target_axis = 0;
+        for(int i = 0;i<tensors.size();i++){
+            while(it1s[i].hasNext()){
+                *it = *it1s[i];
+                ++it1s[i];
+                ++it;
+            }
+            it1s[i].reset();
+        }
+        return t;
+
     }
 
     template <typename U>
